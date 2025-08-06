@@ -1,160 +1,141 @@
 import uuid
-
 from datetime import datetime, date
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ..utils.database import Database
+from django.db.models import F, Q, Value, Case, When
+from django.db.models.functions import Cast
+from django.db.models import CharField
+from .models import Attendance, Student, Class
+
 
 @csrf_exempt
 def get_current_class_attendance(request):
   if request.method == "GET":
-    current_class = request.GET.get("current_class")
-    data = [current_class, date.today()]
-    query = '''
-      SELECT
-        Students.ID,
-        Students.FirstName,
-        Students.MiddleName,
-        Students.LastName,
-        TIME_FORMAT(Attendance.Time, '%%H:%%i') AS Time
-      FROM
-        Attendance
-      LEFT JOIN
-        Students
-      ON
-        Attendance.Student = Students.ID
-      WHERE
-        Attendance.Class = %s AND Attendance.Date = %s
-    '''
-    return JsonResponse({"status_code": 200, "data": Database.ExecuteGetQuery(query, data)})
-  return JsonResponse({
-    "status_code": 405,
-    "error": "Method not allowed"
-  })
+    current_class_id = request.GET.get("current_class")
+    today = date.today()
+
+    attendance = Attendance.objects.filter(
+      class_obj__id=current_class_id,
+      date__date=today
+    ).select_related('student')
+
+    data = [{
+      "ID": att.student.id,
+      "FirstName": att.student.first_name,
+      "MiddleName": att.student.middle_name,
+      "LastName": att.student.last_name,
+      "Time": att.time.strftime("%H:%M") if att.time else None
+    } for att in attendance]
+
+    return JsonResponse({"status_code": 200, "data": data})
+  return JsonResponse({"status_code": 405, "error": "Method not allowed"})
+
 
 @csrf_exempt
 def search_attendance(request):
   if request.method == "GET":
-    attendance_id = request.GET.get("attendance_id")
-    data = (attendance_id, date.today())
-    query = '''
-      SELECT
-        Students.ID,
-        Students.FirstName,
-        Students.MiddleName,
-        Students.LastName,
-        Attendance.Time
-      FROM
-        Attendance
-      LEFT JOIN
-        Students
-      ON
-        Attendance.Student = Students.ID
-      WHERE
-        Attendance.Student = %s
-      AND
-        Attendance.Date = %s
-    '''
-    return JsonResponse({"status_code": 200, "data": Database.ExecuteGetQuery(query, data)})
-  return JsonResponse({
-    "status_code": 405,
-    "error": "Method not allowed"
-  })
+    student_id = request.GET.get("attendance_id")
+    today = date.today()
+
+    attendance = Attendance.objects.filter(
+      student__id=student_id,
+      date__date=today
+    ).select_related('student')
+
+    data = [{
+      "ID": att.student.id,
+      "FirstName": att.student.first_name,
+      "MiddleName": att.student.middle_name,
+      "LastName": att.student.last_name,
+      "Time": att.time.strftime("%H:%M:%S") if att.time else None
+    } for att in attendance]
+
+    return JsonResponse({"status_code": 200, "data": data})
+  return JsonResponse({"status_code": 405, "error": "Method not allowed"})
+
 
 @csrf_exempt
 def check_attendance(request):
   if request.method == "GET":
     student_id = request.GET.get("student_id")
-    current_class = request.GET.get("current_class")
-    data = (date.today(), student_id, current_class)
-    query = '''
-      SELECT
-        *
-      FROM
-        Attendance
-      WHERE
-        Date = %s
-      AND
-        Student = %s
-      AND
-        Class = %s
-    '''
-    is_present = len(Database.ExecuteGetQuery(query, data)) > 0
+    class_id = request.GET.get("current_class")
+    today = date.today()
+
+    is_present = Attendance.objects.filter(
+      student__id=student_id,
+      class_obj__id=class_id,
+      date__date=today
+    ).exists()
+
     return JsonResponse({"status_code": 200, "data": is_present})
-  return JsonResponse({
-    "status_code": 405,
-    "error": "Method not allowed"
-  })
+  return JsonResponse({"status_code": 405, "error": "Method not allowed"})
+
 
 @csrf_exempt
 def insert_attendance(request):
   if request.method == "POST":
     student_id = request.POST.get("student_id")
-    current_class = request.POST.get("current_class")
-    now = datetime.now()
-    AttendanceID = str(uuid.uuid4())
-    date_ = now.strftime("%Y-%m-%d")
-    time = now.strftime("%H:%M:%S")
+    class_id = request.POST.get("current_class")
 
-    data = (AttendanceID, student_id, current_class, time, date_)
-    query = '''
-      INSERT INTO
-        Attendance
-      VALUES
-      (
-        %s,
-        %s,
-        %s,
-        %s,
-        %s
-      )
-    '''
-    return JsonResponse({"status_code": 200, "data": Database.ExecuteGetQuery(query, data)})
-  return JsonResponse({
-    "status_code": 405,
-    "error": "Method not allowed"
-  })
+    now = datetime.now()
+    attendance = Attendance.objects.create(
+      id=str(uuid.uuid4()),
+      student_id=student_id,
+      class_obj_id=class_id,
+      time=now.time(),
+      date=now
+    )
+
+    return JsonResponse({"status_code": 200, "data": {
+      "AttendanceID": attendance.id,
+      "StudentID": student_id,
+      "ClassID": class_id,
+      "Time": now.strftime("%H:%M:%S"),
+      "Date": now.strftime("%Y-%m-%d")
+    }})
+  return JsonResponse({"status_code": 405, "error": "Method not allowed"})
+
 
 @csrf_exempt
 def get_class_attendance_report(request):
   if request.method == "GET":
-    start_time = request.GET.get("start_time")
+    start_time_str = request.GET.get("start_time")
     allowed_minutes = int(request.GET.get("allowed_minutes")) * 60
-    current_class = request.GET.get("current_class")
-    data = (start_time, allowed_minutes, current_class, date.today())
-    query = '''
-      SELECT
-        Students.ID,
-        Students.FirstName,
-        Students.MiddleName,
-        Students.LastName,
-        CASE
-          WHEN
-            Attendance.Time IS NULL THEN 'absent'
-          ELSE
-            TIME_FORMAT(Attendance.Time, '%%H:%%i')
-        END AS Time,
-        CASE
-          WHEN
-            Attendance.Time IS NULL THEN FALSE
-          WHEN
-            TIME_TO_SEC(TIMEDIFF(Attendance.Time, %s)) > %s THEN 'late'
-          ELSE
-            'not late'
-        END AS Lateness
-      FROM
-        Students
-      LEFT JOIN
-        Attendance
-      ON
-        Attendance.Student = Students.ID
-      AND
-        Attendance.Class = %s
-      AND
-        Attendance.Date = %s
-    '''
-    return JsonResponse({"status_code": 200, "data": Database.ExecuteGetQuery(query, data)})
-  return JsonResponse({
-    "status_code": 405,
-    "error": "Method not allowed"
-  })
+    class_id = request.GET.get("current_class")
+    today = date.today()
+
+    start_time = datetime.strptime(start_time_str, "%H:%M").time()
+
+    students = Student.objects.all().annotate(
+      attendance_time=F('attendance__time'),
+      attendance_date=F('attendance__date'),
+      attendance_class=F('attendance__class_obj')
+    ).filter(
+      Q(attendance_date__date=today) | Q(attendance_date__isnull=True),
+      Q(attendance_class__id=class_id) | Q(attendance_class__isnull=True)
+    ).distinct()
+
+    data = []
+    for s in students:
+      if s.attendance_time is None:
+        time_val = "absent"
+        lateness = False
+      else:
+        time_val = s.attendance_time.strftime("%H:%M")
+        diff_seconds = (
+          datetime.combine(today, s.attendance_time) -
+          datetime.combine(today, start_time)
+        ).total_seconds()
+        lateness = "late" if diff_seconds > allowed_minutes else "not late"
+
+      data.append({
+        "ID": s.id,
+        "FirstName": s.first_name,
+        "MiddleName": s.middle_name,
+        "LastName": s.last_name,
+        "Time": time_val,
+        "Lateness": lateness
+      })
+
+    return JsonResponse({"status_code": 200, "data": data})
+  return JsonResponse({"status_code": 405, "error": "Method not allowed"})

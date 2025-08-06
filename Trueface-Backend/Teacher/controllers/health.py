@@ -1,11 +1,7 @@
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 
-@csrf_exempt
+
+@require_GET
 def health(request):
-  if request.method == "GET":
-    return JsonResponse({"status_code": 200, "data": True})
-  return JsonResponse({
-    "status_code": 405,
-    "error": "Method not allowed"
-  })
+  return JsonResponse({"status_code": 200, "data": True})
