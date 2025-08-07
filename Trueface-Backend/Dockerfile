@@ -9,6 +9,8 @@ RUN apt-get update && \
   cmake \
   build-essential \
   python3-dev \
+  default-libmysqlclient-dev \
+  pkg-config \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir -r requirements.txt
