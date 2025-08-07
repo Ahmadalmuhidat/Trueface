@@ -1,17 +1,25 @@
 pipeline {
   agent any
 
+  parameters {
+    choice(
+      name: 'TARGET_DIR',
+      choices: ['backend', 'TrueFace-Cam', 'Trueface-Backend'],
+      description: 'Select the folder to build from.'
+    )
+  }
+
   environment {
     DOCKER_IMAGE = "trueface-django"
     DOCKER_CONTAINER = "trueface-django"
 
-    // These credentials must be configured in Jenkins > Manage Jenkins > Credentials
-    DB_HOST = credentials('db-host') // type: Secret Text
-    DB_NAME = credentials('db-name') // type: Secret Text
-    DB_USER = credentials('db-user') // type: Username with password or Secret Text
-    DB_PASSWORD = credentials('db-password') // type: Secret Text
-    JWT_TOKEN_SECRET = credentials('jwt-secret') // type: Secret Text
-    SECRET = credentials('secret-env-key')
+    // Jenkins credentials (must be added via Manage Jenkins > Credentials)
+    DB_HOST          = credentials('db-host')         // type: Secret Text
+    DB_NAME          = credentials('db-name')         // type: Secret Text
+    DB_USER          = credentials('db-user')         // type: Secret Text or Username
+    DB_PASSWORD      = credentials('db-password')     // type: Secret Text
+    JWT_TOKEN_SECRET = credentials('jwt-secret')      // type: Secret Text
+    SECRET           = credentials('secret-env-key')  // type: Secret Text
   }
 
   stages {
@@ -24,9 +32,11 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        script {
-          echo "Building Docker image..."
-          sh "docker build -t ${DOCKER_IMAGE}:latest ."
+        dir("${params.TARGET_DIR}") {
+          script {
+            echo "Building Docker image from ${params.TARGET_DIR}..."
+            sh "docker build -t ${DOCKER_IMAGE}:latest ."
+          }
         }
       }
     }
