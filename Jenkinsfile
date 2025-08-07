@@ -10,15 +10,14 @@ pipeline {
   }
 
   environment {
-    DOCKER_IMAGE = "trueface-django"
-    DOCKER_CONTAINER = "trueface-django"
+    DOCKER_IMAGE "trueface-django"
+    DOCKER_CONTAINER "trueface-django"
 
-    // Jenkins credentials (must be added via Manage Jenkins > Credentials)
-    DB_HOST = credentials('mysql-db-host') // type: Secret Text
-    DB_NAME='Trueface'
-    DB_USER = credentials('mysql-db-user') // type: Secret Text or Username
-    DB_PASSWORD = credentials('mysql-db-password') // type: Secret Text
-    JWT_TOKEN_SECRET = credentials('jwt-secret') // type: Secret Text
+    DB_HOST credentials('mysql-db-host')
+    DB_NAME "Trueface"
+    DB_USER credentials('mysql-db-user')
+    DB_PASSWORD credentials('mysql-db-password')
+    JWT_TOKEN_SECRET credentials('jwt-secret')
   }
 
   stages {
