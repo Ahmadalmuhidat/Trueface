@@ -19,7 +19,6 @@ pipeline {
     DB_USER = credentials('mysql-db-user') // type: Secret Text or Username
     DB_PASSWORD = credentials('mysql-db-password') // type: Secret Text
     JWT_TOKEN_SECRET = credentials('jwt-secret') // type: Secret Text
-    SECRET = credentials('secret-env-key')  // type: Secret Text
   }
 
   stages {
@@ -58,7 +57,6 @@ pipeline {
             -e DB_USER=${DB_USER} \
             -e DB_PASSWORD=${DB_PASSWORD} \
             -e JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET} \
-            -e SECRET=${SECRET} \
             ${DOCKER_IMAGE}:latest
           """
         }
