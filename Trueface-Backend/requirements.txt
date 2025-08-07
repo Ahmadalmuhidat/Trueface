@@ -1,0 +1,14 @@
+# Core Framework
+Django==4.2.20
+
+# MySQL database support
+mysqlclient>=2.2.0
+
+# Environment variable loading
+python-dotenv>=1.0.1
+
+# JSON Web Tokens
+PyJWT>=2.8.0
+
+# Production
+gunicorn>=21.2.0
