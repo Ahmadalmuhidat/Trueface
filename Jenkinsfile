@@ -10,14 +10,15 @@ pipeline {
   }
 
   environment {
-    DOCKER_IMAGE "trueface-django"
-    DOCKER_CONTAINER "trueface-django"
+    DOCKER_IMAGE = "trueface-django"
+    DOCKER_CONTAINER = "trueface-django"
 
-    DB_HOST credentials('mysql-db-host')
-    DB_NAME "Trueface"
-    DB_USER credentials('mysql-db-user')
-    DB_PASSWORD credentials('mysql-db-password')
-    JWT_TOKEN_SECRET credentials('jwt-secret')
+    // Jenkins credentials - Secret Texts from your Jenkins credentials
+    DB_HOST = credentials('mysql-db-host')
+    DB_NAME = "Trueface"
+    DB_USER = credentials('mysql-db-user')
+    DB_PASSWORD = credentials('mysql-db-password')
+    JWT_TOKEN_SECRET = credentials('jwt-secret')
   }
 
   stages {
@@ -51,12 +52,12 @@ pipeline {
           echo "Running new Docker container..."
           sh """
             docker run -d --name ${DOCKER_CONTAINER} -p 8000:8000 \
-            -e DB_HOST=${DB_HOST} \
-            -e DB_NAME=${DB_NAME} \
-            -e DB_USER=${DB_USER} \
-            -e DB_PASSWORD=${DB_PASSWORD} \
-            -e JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET} \
-            ${DOCKER_IMAGE}:latest
+              -e DB_HOST=${DB_HOST} \
+              -e DB_NAME=${DB_NAME} \
+              -e DB_USER=${DB_USER} \
+              -e DB_PASSWORD=${DB_PASSWORD} \
+              -e JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET} \
+              ${DOCKER_IMAGE}:latest
           """
         }
       }
