@@ -31,7 +31,7 @@ The Backend API manages all attendance data and interactions.
 1.  **Set up the environment:**
     ```bash
     python3 -m venv env
-    source env/bin/activate
+    .\env\Scripts\Activate.ps1
     pip install -r requirements.txt
     ```
 2.  **Configure Database:** Navigate to `settings.py` and update the `DATABASES` dictionary with your MySQL connection details.
@@ -50,7 +50,7 @@ The Admin System provides a user interface for managing attendance data and syst
 1.  **Set up the environment:**
     ```bash
     python3.9 -m venv env
-    source env/bin/activate
+    .\env\Scripts\Activate.ps1
     pip install -r requirements.txt
     ```
 2.  **Run the application:**
@@ -63,7 +63,7 @@ The Camera System handles real-time facial recognition and attendance capture.
 1.  **Set up the environment:**
     ```bash
     python3.9 -m venv env
-    source env/bin/activate
+    .\env\Scripts\Activate.ps1
     pip install -r requirements.txt
     ```
 2.  **Run the application:**
