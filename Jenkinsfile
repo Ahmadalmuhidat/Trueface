@@ -4,7 +4,7 @@ pipeline {
   parameters {
     choice(
       name: 'TARGET_DIR',
-      choices: ['backend', 'TrueFace-Cam', 'Trueface-Backend'],
+      choices: ['TrueFace-Admin', 'TrueFace-Cam', 'Trueface-Backend'],
       description: 'Select the folder to build from.'
     )
   }
@@ -14,10 +14,10 @@ pipeline {
     DOCKER_CONTAINER = "trueface-django"
 
     // Jenkins credentials (must be added via Manage Jenkins > Credentials)
-    DB_HOST          = credentials('db-host')         // type: Secret Text
-    DB_NAME          = credentials('db-name')         // type: Secret Text
-    DB_USER          = credentials('db-user')         // type: Secret Text or Username
-    DB_PASSWORD      = credentials('db-password')     // type: Secret Text
+    DB_HOST          = credentials('mysql-db-host')         // type: Secret Text
+    DB_NAME          = credentials('mysql-db-name')         // type: Secret Text
+    DB_USER          = credentials('mysql-db-user')         // type: Secret Text or Username
+    DB_PASSWORD      = credentials('mysql-db-password')     // type: Secret Text
     JWT_TOKEN_SECRET = credentials('jwt-secret')      // type: Secret Text
     SECRET           = credentials('secret-env-key')  // type: Secret Text
   }
