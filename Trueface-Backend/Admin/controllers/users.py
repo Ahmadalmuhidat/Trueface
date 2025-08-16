@@ -113,7 +113,7 @@ def RemoveUser(request):
   }, status=405)
 
 @csrf_exempt
-def checkUser(request):
+def login(request):
   if request.method == "GET":
     email = request.GET.get("email")
     password = request.GET.get("password")

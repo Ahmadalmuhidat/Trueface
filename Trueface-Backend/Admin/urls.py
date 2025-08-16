@@ -7,7 +7,7 @@ urlpatterns = [
   path('get_users', users.GetUsers),
   path('search_user', users.SearchUser),
   path('remove_user', users.RemoveUser),
-  path('check_user', users.checkUser),
+  path('login', users.login),
 
   # students
   path('insert_student', students.InsertStudent),
@@ -15,7 +15,7 @@ urlpatterns = [
   path('get_all_students', students.GetAllStudents),
   path('search_student', students.SearchStudent),
   path('get_students_count', students.GetStudentsCount),
-  path('check_duplicated_student_id', students.CheckDuplicatedStudentId),
+  path('check_duplicated_student_id', students.CheckDuplicatedStudentId), # remove
 
   # classes
   path('get_classes', classes.GetClasses),
@@ -26,7 +26,7 @@ urlpatterns = [
   path('insert_class', classes.InsertClass),
   path('get_classes_student_relation', classes.GetClassesStudentRelation),
   path('remove_class_student_relation', classes.RemoveClassStudentRelation),
-  path('get_classes_for_selection', classes.GetClassesForSelection),
+  path('get_classes_for_selection', classes.GetClassesForSelection), # remove
 
   # courses
   path("get_courses", courses.GetCourses),

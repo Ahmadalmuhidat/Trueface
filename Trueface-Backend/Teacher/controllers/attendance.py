@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from ..utils.database import Database
 
 @csrf_exempt
-def get_current_class_attendance(request):
+def GetAttendanceByClass(request):
   if request.method == "GET":
     current_class = request.GET.get("current_class")
     data = [current_class, date.today()]
@@ -33,7 +33,7 @@ def get_current_class_attendance(request):
   })
 
 @csrf_exempt
-def search_attendance(request):
+def SearchAttendance(request):
   if request.method == "GET":
     attendance_id = request.GET.get("attendance_id")
     data = (attendance_id, date.today())
@@ -62,7 +62,7 @@ def search_attendance(request):
   })
 
 @csrf_exempt
-def check_attendance(request):
+def CheckAttendance(request):
   if request.method == "GET":
     student_id = request.GET.get("student_id")
     current_class = request.GET.get("current_class")
@@ -87,7 +87,7 @@ def check_attendance(request):
   })
 
 @csrf_exempt
-def insert_attendance(request):
+def InsertAttendance(request):
   if request.method == "POST":
     student_id = request.POST.get("student_id")
     current_class = request.POST.get("current_class")
@@ -108,50 +108,6 @@ def insert_attendance(request):
         %s,
         %s
       )
-    '''
-    return JsonResponse({"status_code": 200, "data": Database.ExecuteGetQuery(query, data)})
-  return JsonResponse({
-    "status_code": 405,
-    "error": "Method not allowed"
-  })
-
-@csrf_exempt
-def get_class_attendance_report(request):
-  if request.method == "GET":
-    start_time = request.GET.get("start_time")
-    allowed_minutes = int(request.GET.get("allowed_minutes")) * 60
-    current_class = request.GET.get("current_class")
-    data = (start_time, allowed_minutes, current_class, date.today())
-    query = '''
-      SELECT
-        Students.ID,
-        Students.FirstName,
-        Students.MiddleName,
-        Students.LastName,
-        CASE
-          WHEN
-            Attendance.Time IS NULL THEN 'absent'
-          ELSE
-            TIME_FORMAT(Attendance.Time, '%%H:%%i')
-        END AS Time,
-        CASE
-          WHEN
-            Attendance.Time IS NULL THEN FALSE
-          WHEN
-            TIME_TO_SEC(TIMEDIFF(Attendance.Time, %s)) > %s THEN 'late'
-          ELSE
-            'not late'
-        END AS Lateness
-      FROM
-        Students
-      LEFT JOIN
-        Attendance
-      ON
-        Attendance.Student = Students.ID
-      AND
-        Attendance.Class = %s
-      AND
-        Attendance.Date = %s
     '''
     return JsonResponse({"status_code": 200, "data": Database.ExecuteGetQuery(query, data)})
   return JsonResponse({
