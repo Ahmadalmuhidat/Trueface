@@ -18,8 +18,7 @@ To get started with TrueFace, ensure you have the following prerequisites instal
 
 ### Prerequisites
 * **Python 3.9+**: The core language for TrueFace.
-* **Docker**: Essential for containerization and simplified deployment.
-* **MySQL**: The default database for storing attendance data. While configurable, MySQL is recommended for initial setup.
+* **MySQL Server**: The default database for storing attendance data. While configurable, MySQL is recommended for initial setup.
 
 ---
 
@@ -79,13 +78,6 @@ Below is a screenshot showcasing the intuitive user interface of the TrueFace Ad
 ![UI Screenshot](./assets/trueface-admin-screenshot.png)
 
 ### Camera System Diagrams
-* **Configrations**: Contains the system's global configuration settings.
-* **Context**: Holds the system's global data.
-* **Router**: Manages navigation between views.
-* **Camera Module**: Controls camera functions.
-* **Face Recognition Module**: Handles face recognition processes.
-* **QR Reader Module**: Contains the system's global configuration settings.
-
 ![Diagram 1 - System Architecture](./assets/trueface_cam_arch.png)
 <p align="center"><em>Figure 1: System Architecture of the Camera System</em></p>
 

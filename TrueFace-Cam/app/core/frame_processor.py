@@ -37,7 +37,7 @@ class FrameProcessor:
       cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
       frame_count = 0
-      process_every = 5
+      process_every = 10
 
       while not self._config.shutdown_event.is_set():
         ret, frame = cap.read()

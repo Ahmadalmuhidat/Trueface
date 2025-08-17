@@ -3,9 +3,8 @@ import face_recognition
 import time
 import winsound
 
-from numpy import argmin
 from datetime import datetime
-from threading import Lock
+from threading import Lock, Thread
 from app.config.context import Context
 from app.interfaces.attendance import Attendance
 from app.interfaces.student import Student
@@ -54,7 +53,7 @@ class FaceRecognitionModule():
 
 	def _downscale_frame(self, frame):
 		"""Downscale the frame to speed up processing."""
-		return cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+		return cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
 
 	def _detect_faces(self, frame):
 		"""Detect faces using the HOG model."""
@@ -80,12 +79,7 @@ class FaceRecognitionModule():
 					student = self._context.get_students()[i]
 					if not student.is_attended():
 						self._record_attendance(student)
-						frequency = 2500
-						duration = 500  # 1 second
-						winsound.Beep(
-							frequency,
-							duration
-						)
+						Thread(target=winsound.Beep, args=(2500, 500)).start()
 
 	def _record_attendance(self, student: Student):
 		"""Record attendance for a student."""

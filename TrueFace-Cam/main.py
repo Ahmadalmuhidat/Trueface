@@ -12,6 +12,9 @@ from app.config.configrations import Configrations
 from app.core.camera_manager import CameraManager
 from CTkMessagebox import CTkMessagebox
 from app.config.router import Router
+from app.core.logger import Logger
+
+customtkinter.set_appearance_mode("dark")
 
 class Main:
   def __init__(self):
@@ -19,10 +22,11 @@ class Main:
       self._config = Configrations()
       self._camera_manager = CameraManager()
       self._router = Router()
+      self._logger = Logger()
       self.window = None
 
-    except Exception:
-      self._log_exception()
+    except Exception as e:
+      self._logger.log_exception(e)
 
   def create_navbar(self):
     """Build the navigation bar and buttons."""
@@ -35,8 +39,8 @@ class Main:
       self._add_nav_button(navbar, "Students", Students.Students)
       self._add_nav_button(navbar, "Settings", Settings.Settings)
 
-    except Exception:
-      self._log_exception()
+    except Exception as e:
+      self._logger.log_exception(e)
 
   def _add_nav_button(self, parent, text, view_class):
     """Helper to add a navigation button."""
@@ -55,12 +59,16 @@ class Main:
         self._show_message("Error", "Please stop the camera first", "cancel")
         return
 
-      # TODO: Shut down all threads if applicable
+      self._config.shutdown_event.set()
+
+      self._config.frame_processing_executor.shutdown(wait=True)  
+      self._config.ui_threads_executor.shutdown(wait=True)
+
       self.window.destroy()
       sys.exit(0)
 
-    except Exception:
-      self._log_exception()
+    except Exception as e:
+      self._logger.log_exception(e)
 
   def start_program(self):
     """Initialize and start the main application."""
@@ -74,8 +82,8 @@ class Main:
 
       self.window.mainloop()
 
-    except Exception:
-      self._log_exception()
+    except Exception as e:
+      self._logger.log_exception(e)
     except KeyboardInterrupt:
       pass
 
@@ -95,13 +103,6 @@ class Main:
 
   def _show_message(self, title, message, icon):
     CTkMessagebox(title=title, message=message, icon=icon)
-
-  def _log_exception(self):
-    """Log exception details for debugging."""
-    ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-    fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-    print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-    print(ExceptionObject)
 
 if __name__ == "__main__":
   # Main().start_program()
