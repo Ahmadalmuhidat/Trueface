@@ -48,6 +48,7 @@ def add_student(student_object: Student) -> None:
 		response = requests.post(
 			data_manager.get_config().get_base_url() + "/insert_student",
 			data = data,
+			timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 
@@ -90,7 +91,8 @@ def remove_student(student_id: str, refresh_table_function) -> None:
 			data_manager = Context()
 			response = requests.post(
 				data_manager.get_config().get_base_url() + "/remove_student", 
-				data = data
+				data = data,
+			  timeout=20
 			).content
 			response = json.loads(response.decode('utf-8'))
 
@@ -126,7 +128,8 @@ def search_student(student_id: str) -> list:
 		data_manager = Context()
 		response = requests.get(
 			data_manager.get_config().get_base_url() + "/search_student",
-			params = data
+			params = data,
+			timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 		data_manager = Context()

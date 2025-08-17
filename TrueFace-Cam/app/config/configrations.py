@@ -1,3 +1,7 @@
+import threading
+
+from concurrent.futures import ThreadPoolExecutor
+
 class Configrations:
   # static
   window = None
@@ -15,8 +19,14 @@ class Configrations:
     if self.__class__._initialized:
       return
     self.__class__._initialized = True
+
     # private
-    self._base_url = "http://localhost:8000/teacher"
+    self._backend_endpoint = "http://34.29.161.87:8000/teacher"
+
+    # threading
+    self.frame_processing_executor = ThreadPoolExecutor(max_workers=10)
+    self.ui_threads_executor = ThreadPoolExecutor(max_workers=5)
+    self.shutdown_event = threading.Event()
 
   @classmethod
   def loading_cursor_on(cls):
@@ -29,14 +39,6 @@ class Configrations:
     cls.get_window().update()
 
   @classmethod
-  def set_close_threads(cls, close_threads):
-    cls.close_threads = close_threads
-
-  @classmethod
-  def get_close_threads(cls):
-    return cls.close_threads
-
-  @classmethod
   def set_window(cls, window):
     cls.window = window
 
@@ -44,5 +46,5 @@ class Configrations:
   def get_window(cls):
     return cls.window
 
-  def get_base_url(self):
-    return self._base_url
+  def get_backend_endpoint(self):
+    return self._backend_endpoint

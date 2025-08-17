@@ -1,4 +1,4 @@
-from app.models.student import Student
+from app.interfaces.student import Student
 
 class Attendance:
   def __init__(self, student: Student, time):

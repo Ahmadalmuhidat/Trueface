@@ -1,7 +1,6 @@
 import sys
 import os
 import customtkinter
-import threading
 
 from app.models import class_
 from app.config.context import Context
@@ -509,7 +508,7 @@ class Classes():
       submit_button = customtkinter.CTkButton(
         self.pop_window,
         text="Save Class",
-        command= lambda _: threading.Thread(target=self.submit_new_class).start()
+        command= lambda _: self._config.executor.submit(self.submit_new_class)
       )
       submit_button.grid(
         row=14,
@@ -619,7 +618,7 @@ class Classes():
       for col in range(len(self.headers)):
         self.classes_table_frame.columnconfigure(col, weight=1)
 
-      threading.Thread(target=self.display_classes_table).start()
+      self._config.executor.submit(self.display_classes_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

@@ -56,7 +56,8 @@ class Student:
       }
       response = requests.get(
         self.config.get_base_url() + "/check_duplicated_id",
-        params = data
+        params = data,
+			  timeout=20
       ).content
       response = json.loads(response.decode('utf-8'))
 

@@ -3,7 +3,6 @@ import os
 import customtkinter
 import tkinter
 import uuid
-import threading
 
 from PIL import Image
 from app.config.context import Context
@@ -144,10 +143,7 @@ class Students():
                 classes_table_frame,
                 text="Remove",
                 fg_color="red",
-                command= lambda relation_id=class_.relation_id: threading.Thread(
-                  target=remove_relation,
-                  args=(relation_id)
-                ).start()
+                command= lambda relation_id=class_.relation_id: self._config.executor.submit(remove_relation, relation_id)
               )
               delete_button.grid(
                 row=row,
@@ -166,7 +162,7 @@ class Students():
           print(ExceptionType, FileName, ExceptionTraceBack.tb_lineno)
           print(ExceptionObject)
 
-      threading.Thread(target=display_classes_table).start()
+      self._config.executor.submit(display_classes_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
@@ -236,12 +232,12 @@ class Students():
       submit_button = customtkinter.CTkButton(
         window,
         text="Save Class",
-        command= lambda: threading.Thread(target=add_student_to_class(
+        command= lambda: self._config.executor.submit(
+          add_student_to_class,
           str(uuid.uuid4()),
           student_id,
           class_id_title_map[class_entry.get()],
-          day_entry.get()
-        ))
+          day_entry.get())
       )
       submit_button.pack(
         padx=10,
@@ -254,14 +250,14 @@ class Students():
       print(ExceptionType, FileName, ExceptionTraceBack.tb_lineno)
       print(ExceptionObject)
 
-  def student_profile_pop_window(self, student_id):
+  def student_profile_pop_window(self, student_id, student_name):
     try:
       pop_window = customtkinter.CTkToplevel()
       pop_window.grab_set()
 
       pop_window.geometry("700x500")
       pop_window.resizable(False, False)
-      pop_window.title("Classes")
+      pop_window.title(f"{student_name} classes")
 
       navbar = customtkinter.CTkFrame(pop_window)
       navbar.pack(fill = customtkinter.X)
@@ -353,7 +349,7 @@ class Students():
           profile_button = customtkinter.CTkButton(
             self.students_table_frame,
             text="Profile",
-            command = lambda student_id=student.get_student_id(): self.student_profile_pop_window(student_id)
+            command=lambda student_id=student.get_student_id(), student_name=f"{student.get_first_name()} {student.get_middle_name()} {student.get_last_name()}": self.student_profile_pop_window(student_id, student_name)
           )
           profile_button.grid(
             row=row,
@@ -719,7 +715,7 @@ class Students():
       for col in range(len(self.headers)):
         self.students_table_frame.columnconfigure(col, weight=1)
 
-      threading.Thread(target=self.display_students_table).start()
+      self._config.executor.submit(self.display_students_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

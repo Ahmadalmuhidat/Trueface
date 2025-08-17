@@ -1,7 +1,6 @@
 import sys
 import os
 import customtkinter
-import threading
 
 from app.models import user
 from app.config.context import Context
@@ -76,7 +75,7 @@ class Users():
               self.users_table_frame,
                 text="Delete",
                 fg_color="red",
-                command= lambda user_id=user.get_user_id(): threading.Thread(target=remove_user, args=(user_id, self.refresh_users_table)).start()
+                command= lambda user_id=user.get_user_id(): self._config.executor(remove_user, user_id, self.refresh_users_table)
               )
             delete_button.grid(
                 row=row,
@@ -369,7 +368,7 @@ class Users():
       for col in range(len(self.headers)):
         self.users_table_frame.columnconfigure(col, weight=1)
 
-      threading.Thread(target=self.display_users_table).start()
+      self._config.executor.submit(self.display_users_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

@@ -72,16 +72,9 @@ class Main():
   def when_app_close(self):
     try:
       self._config.window.destroy()
-
-      threadsToTerminate = [
-        thread for thread in 
-          threading.enumerate() if
-            thread.ident != threading.get_ident()
-      ]
-
-      for thread in threadsToTerminate:
-        if thread.is_alive():
-          thread.join(timeout=1)
+      self._config.shutdown_event.set()
+      self._config.pause_event.set()
+      self._config.executor.shutdown(wait=True)
 
     except Exception as e:
         ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

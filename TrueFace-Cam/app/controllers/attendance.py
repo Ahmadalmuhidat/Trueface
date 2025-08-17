@@ -1,26 +1,34 @@
-import os
-import sys
 import requests
-import winsound
 import json
 
 from CTkMessagebox import CTkMessagebox
 from app.config.context import Context
+from app.core.logger import Logger
 
-def get_current_class_attendance():
+LOGGER = Logger()
+
+def get_attendance_by_class():
   try:
-    database_manager = Context()
+    context = Context()
+    if not context.current_class:
+      CTkMessagebox(
+        title="Error",
+        message="Please select a class first.",
+        icon="cancel"
+      )
+      return
+
     data = {
-      "current_class": database_manager.get_current_class()
+      "current_class": context.get_current_class().class_id
     }
     response = requests.get(
-      database_manager.get_config().get_base_url() + "/get_current_class_attendance",
+      context.get_config().get_backend_endpoint() + "/get_attendance_by_class",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))
 
     if response.get("status_code") == 200:
-      database_manager.set_current_lecture_attendance(response.get("data"))
+      context.set_attendance(response.get("data"))
     else:
       title = "Error"
       message = response.get("error")
@@ -32,26 +40,23 @@ def get_current_class_attendance():
       )
 
   except Exception as e:
-    ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-    fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-    print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-    print(ExceptionObject)
+    LOGGER.log_exception(e)
     pass
 
 def search_attendance(student_id):
   try:
-    database_manager = Context()
+    context = Context()
     data = {
       "student_id": student_id,
     }
     response = requests.get(
-      database_manager.get_config().get_base_url() + "/search_attendance",
+      context.get_config().get_backend_endpoint() + "/search_attendance",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))
 
     if response.get("status_code") == 200:
-      database_manager.set_current_lecture_attendance(response.get("data"))
+      context.set_attendance(response.get("data"))
     else:
       title = "Error"
       message = response.get("error")
@@ -63,21 +68,18 @@ def search_attendance(student_id):
       )
 
   except Exception as e:
-    ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-    fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-    print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-    print(ExceptionObject)
+    LOGGER.log_exception(e)
     pass
 
 def check_attendance(student_id):
   try:
-    database_manager = Context()
+    context = Context()
     data = {
       "student_id": student_id,
-      "current_class": database_manager.get_current_class()
+      "current_class": context.get_current_class().class_id
     }
     response = requests.get(
-      database_manager.get_config().get_base_url() + "/check_attendance",
+      context.get_config().get_backend_endpoint() + "/check_attendance",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))
@@ -95,35 +97,26 @@ def check_attendance(student_id):
       )
 
   except Exception as e:
-    ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-    fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-    print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-    print(ExceptionObject)
+    LOGGER.log_exception(e)
     pass
 
 def insert_attendance(student_id, student_name):
   try:
     if not check_attendance(student_id):
-      database_manager = Context()
+      context = Context()
       data = {
         "student_id": student_id,
-        "current_class": database_manager.get_current_class()
+        "current_class": context.get_current_class().class_id
       }
       response = requests.post(
-        database_manager.get_config().get_base_url() + "/insert_attendance",
+        context.get_config().get_backend_endpoint() + "/insert_attendance",
         data = data
       ).content
       response = json.loads(response.decode('utf-8'))
 
       if response.get("status_code") == 200:
-        frequency = 2500
-        duration = 500  # 1 second
-        winsound.Beep(
-          frequency,
-          duration
-        )
         CTkMessagebox(
-          title = "Match Found",
+          title = "Attendance Recorded",
           message = "{} has been signed".format(student_name),
           icon = "check"
         )
@@ -138,8 +131,5 @@ def insert_attendance(student_id, student_name):
         )
 
   except Exception as e:
-    ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-    fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-    print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-    print(ExceptionObject)
+    LOGGER.log_exception(e)
     pass

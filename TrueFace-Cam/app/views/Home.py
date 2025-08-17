@@ -4,109 +4,52 @@ import customtkinter
 import psutil
 import time
 import requests
-import threading
 import json
 
 from app.config.configrations import Configrations
 from app.config.context import Context
-from app.core.camera_module import Camera_Manager_Module
 
 class Home():
   def __init__(self):
-    self._camera_manager = Camera_Manager_Module()
-    self._data_manager = Context()
+    from app.core.camera_manager import CameraManager
+
+    self._camera_manager = CameraManager()
+    self._context = Context()
     self._config = Configrations()
 
   def update_camera_status(self):
-    try:
-      while True:
-        if self._camera_manager.found_active_connected_camera:
-          self.camera_status.configure(
-            text = "Connected",
-            text_color = "green"
-          )
-        else:
-          self.camera_status.configure(
-            text= "Disconnected",
-            text_color = "red"
-        )
-
-        time.sleep(5)
-
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
-      pass
+    # check camera status and update label
+    if self._camera_manager.camera_scanner.found_active_connected_camera:
+      self.camera_status.configure(text="Connected", text_color="green")
+    else:
+      self.camera_status.configure(text="Disconnected", text_color="red")
+    # schedule next update after 5 seconds
+    self.window.after(5000, self.update_camera_status)
 
   def update_api_status(self):
     try:
-      while True:
-        response = requests.get(self._config.get_base_url() + "/",).content
-        response_str = response.decode('utf-8')
-        api_active = json.loads(response_str)
-
-        if not api_active.get("data"):
-          self.database_status.configure(
-            text = "Disconnected",
-            text_color = "red"
-          )
-        else:
-          self.database_status.configure(
-            text = "Connected",
-            text_color = "green"
-          )
-
-        time.sleep(2) 
-
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
-      pass 
+      response = requests.get(self._config.get_backend_endpoint() + "/").content
+      api_active = json.loads(response.decode('utf-8'))
+      if api_active.get("data"):
+        self.database_status.configure(text="Connected", text_color="green")
+      else:
+        self.database_status.configure(text="Disconnected", text_color="red")
+    except Exception:
+      self.database_status.configure(text="Disconnected", text_color="red")
+    self.window.after(2000, self.update_api_status)
 
   def update_cpu_metrics(self):
-    try:
-      while True:
-        metrics = psutil.cpu_percent(interval=1)
-        self.cpu_count.configure(
-          text = "CPU Usage \n\n{}%".format(metrics)
-        )
-
-        if Configrations.close_threads:
-          break
-
-        time.sleep(1)
-
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
-      pass
+    metrics = psutil.cpu_percent(interval=None)
+    self.cpu_count.configure(text=f"CPU Usage \n\n{metrics}%")
+    self.window.after(1000, self.update_cpu_metrics)
 
   def update_attendance_count(self):
-    try:
-      while True:
-        self.attendance_count.configure(
-          text = "Attendance \n\n{}".format(len(self._data_manager.get_current_lecture_attendance()))
-        )
+    self.attendance_count.configure(
+      text=f"Attendance \n\n{len(self._context.get_attendance())}"
+    )
+    self.window.after(5000, self.update_attendance_count)
 
-        if Configrations.close_threads:
-          break
-
-        time.sleep(5)
-
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
-      pass
-
-  def lunch_view(self, parent):
+  def launch_view(self, parent):
     try:
       parent.rowconfigure(0, weight = 1)
       parent.rowconfigure(1, weight = 3)
@@ -248,10 +191,10 @@ class Home():
         pady = 15
       )
 
-      threading.Thread(target = self.update_cpu_metrics).start()
-      threading.Thread(target = self.update_attendance_count).start()
-      threading.Thread(target = self.update_api_status).start()
-      threading.Thread(target = self.update_camera_status).start()
+      self._config.ui_threads_executor.submit(self.update_cpu_metrics)
+      self._config.ui_threads_executor.submit(self.update_attendance_count)
+      self._config.ui_threads_executor.submit(self.update_api_status)
+      self._config.ui_threads_executor.submit(self.update_camera_status)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

@@ -10,9 +10,8 @@ from app.config.context import Context
 def get_classes() -> list:
 	try:
 		data_manager = Context()
-		response = requests.get(data_manager.get_config().get_base_url() + "/get_classes").content
+		response = requests.get(data_manager.get_config().get_base_url() + "/get_classes", timeout=20).content
 		response = json.loads(response.decode('utf-8'))
-		data_manager = Context()
 
 		if response.get("status_code") == 200:
 			data_manager.set_classes(response.get("data"))
@@ -54,7 +53,8 @@ def add_class(class_object: Class) -> None:
 
 		response = requests.post(
 			data_manager.get_config().get_base_url() + "/insert_class",
-			data=data
+			data=data,
+			timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 
@@ -97,7 +97,8 @@ def remove_class(class_id: str, refresh_table_function) -> None:
 			data_manager = Context()
 			response = requests.post(
 				data_manager.get_config().get_base_url() + "/remove_class",
-				data = data
+				data = data,
+				timeout=20
 			).content
 			response = json.loads(response.decode('utf-8'))
 
@@ -133,10 +134,10 @@ def search_class(class_id: str) -> list:
 		data_manager = Context()
 		response = requests.get(
 			data_manager.get_config().get_base_url() + "/search_class",
-			params = data
+			params = data,
+				timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
-		data_manager = Context()
 
 		if response.get("status_code") == 200:
 			data_manager.set_classes(response.get("data"))
@@ -165,7 +166,8 @@ def get_student_classes(student_id: str) -> None:
 		data_manager = Context()
 		response = requests.get(
 			data_manager.get_config().get_base_url() + "/get_classes_student_relation",
-			params = data
+			params = data,
+				timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 
@@ -217,7 +219,8 @@ def remove_student_from_class(relation_id: str) -> None:
 			data_manager = Context()
 			response = requests.post(
 				data_manager.get_config().get_base_url() + "/remove_class_student_relation",
-				data = data
+				data = data,
+				timeout=20
 			).content
 			response = json.loads(response.decode('utf-8'))
 
@@ -256,7 +259,8 @@ def remove_student_from_all_classes(student_id: str) -> None:
 		data_manager = Context()
 		response = requests.post(
 			data_manager.get_config().get_base_url() + "/clear_class_student_relation",
-			data = data
+			data = data,
+			timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 
@@ -291,7 +295,7 @@ def get_classes_for_selection() -> list:
 	try:
 		data_manager = Context()
 		response = requests.get(
-			data_manager.get_config().get_base_url() + "/get_classes_for_selection"
+			data_manager.get_config().get_base_url() + "/get_classes_for_selection", timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 
@@ -332,7 +336,8 @@ def add_student_to_class(relation_id: str, student_id: str, class_id: str, class
 		data_manager = Context()
 		response = requests.post(
 			data_manager.get_config().get_base_url() + "/insert_class_student_relation",
-			data = data
+			data = data,
+				timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 

@@ -8,20 +8,19 @@ from app.controllers.auth import login
 
 class Login():
   def __init__(self):
-    self._data_manager = Context()
+    self._context = Context()
 
-  def check_user(self):
-    result = login(
-      self.email_entry.get(),
-      self.password_entry.get()
-    )
+  def login(self):
+    email = self.email_entry.get()
+    password = self.password_entry.get()
 
+    result = login(email, password)
     if result:
-      self._data_manager.set_token(result)
+      self._context.set_jwt_token(result)
       self.window.destroy()
       Main().start_program()
 
-  def lunch_view(self):
+  def launch_view(self):
     try:
       self.window = customtkinter.CTk()
       self.window.geometry("400x170")
@@ -84,7 +83,7 @@ class Login():
       save_button = customtkinter.CTkButton(
         content_frame,
         text = "Login",
-        command = self.check_user
+        command = self.login
       )
       save_button.grid(
         row = 6,

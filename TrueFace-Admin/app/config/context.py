@@ -4,7 +4,6 @@ from app.models.course import Course
 from app.models.user import User
 from app.models.student import Student
 
-
 class Context():
   _instance = None
   _initialized = False

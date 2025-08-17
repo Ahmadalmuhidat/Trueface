@@ -1,20 +1,19 @@
-import os
-import sys
 import requests
 import json
 
-from app.config.context import Context
 from CTkMessagebox import CTkMessagebox
+from app.core.logger import Logger
+
+LOGGER = Logger()
 
 def login(email, password):
   try:
-    database_manager = Context()
     data = {
       "email": email,
       "password": password
     }
     response = requests.get(
-      "http://localhost:8000/admin/check_user",
+      "http://34.29.161.87:8000/admin/login",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))
@@ -32,7 +31,4 @@ def login(email, password):
       )
 
   except Exception as e: 
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+    LOGGER.log_exception(e)

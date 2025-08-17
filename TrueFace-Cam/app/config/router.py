@@ -3,12 +3,14 @@ import sys
 import customtkinter
 
 from app.config.configrations import Configrations
+from app.core.logger import Logger
 
 class Router:
   def __init__(self):
     # private
     self._current_page = None
     self._config = Configrations()
+    self._logger = Logger()
 
   def clear_window(self):
     if self._current_page:
@@ -26,15 +28,11 @@ class Router:
 
       frame = customtkinter.CTkFrame(self._config.get_window())
       view_instance = view_class()
-
-      view_instance.lunch_view(frame)
+      view_instance.launch_view(frame)
 
       self._current_page = frame
       self._current_page.pack(fill="both", expand=True)
 
     except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      FileName = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, FileName, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+      self._logger.log_exception(e)
       pass

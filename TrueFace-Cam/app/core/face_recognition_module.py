@@ -1,135 +1,99 @@
-import os
-import sys
-import customtkinter
 import cv2
 import face_recognition
-import threading
-import pickle
-import base64
 import time
+import winsound
 
+from numpy import argmin
+from datetime import datetime
 from threading import Lock
 from app.config.context import Context
+from app.interfaces.attendance import Attendance
+from app.interfaces.student import Student
+from app.config.configrations import Configrations
 from app.controllers.attendance import insert_attendance
-from concurrent.futures import ThreadPoolExecutor
+from app.core.logger import Logger
 
-class Face_Recognition_Module():
+class FaceRecognitionModule():
 	def __init__(self) -> None:
 		# private
-		self._data_manager = Context()
+		self._context = Context()
+		self._config = Configrations()
+		self._logger = Logger()
+
 		self._scan_lock = Lock()
-		self._executor = ThreadPoolExecutor(max_workers=5)
+
 		self._last_frame_time = 0
 		self._frame_interval = 0.5
 
-	def extract_face(self, frame):
-		return face_recognition.face_locations(frame)
-
-	def compare_face(self, target_id, target_name, target_face_encode, small_frame, face_locations, index):
-		try:
-			if not cam_face_encodings:
-				return
-
-			cam_face_encodings = face_recognition.face_encodings(small_frame, face_locations)
-			face_distances = face_recognition.face_distance(target_face_encode, cam_face_encodings[0])
-
-			if face_distances < 0.5:
-				with self._scan_lock:
-					threading.Thread(
-						target=insert_attendance,
-						args=(target_id, target_name)
-					).start()
-					self._students_to_scan.pop(index)
-
-		except Exception as e:
-			ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-			fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-			print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-			print(ExceptionObject)
-			pass
-	
-	def detect_face(self, face, small_frame):
-		try:
-			for index in range(len(self._students_to_scan)):
-				student = self._students_to_scan[index]
-				args = (
-					student.get_student_id(),
-					student.get_first_name(),
-					student.get_face_encode(),
-					small_frame,
-					face,
-					index
-				)
-				self._executor.submit(self.compare_face, *args)
-
-		except Exception as e:
-			ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-			fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-			print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-			print(ExceptionObject)
-			pass
-	
-	def start_session(self):
-		from app.core.camera_module import Camera_Manager_Module
-		self.camera_manager = Camera_Manager_Module()
-		self._students_to_scan = self._data_manager.get_current_class_students()
-		for student in self._students_to_scan:
-			try:
-				decoded = pickle.loads(base64.b64decode(student.get_face_encode()))
-				student._face_encode = decoded
-			except Exception as e:
-				print(f"Error decoding face for {student.get_student_id()}: {e}")
-	
 	def analyze_camera_stream(self, frame) -> bool:
 		try:
-			current_time = time.time()
-			if current_time - self._last_frame_time >= self._frame_interval:
-				self._last_frame_time = current_time
-				small_frame = cv2.resize(
-					frame,
-					(0, 0),
-					fx=0.25,
-					fy=0.25
-				)
-				face = self.extract_face(small_frame)
+			if not self._should_process_frame():
+				return
 
-				if face and len(self._students_to_scan) != 0:
-					self.detect_face(face, small_frame)
-				else:
-					self.camera_manager.close_loading_stream()
+			small_frame = self._downscale_frame(frame)
+			face_locations = self._detect_faces(small_frame)
+			known_encodings = self._get_known_encodings()
+
+			if face_locations and known_encodings:
+				cam_face_encodings = self._encode_faces(small_frame, face_locations)
+
+				if cam_face_encodings:
+					matches = self._compare_faces(known_encodings, cam_face_encodings[0])
+					self._process_matches(matches)
 
 		except Exception as e:
-			ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-			fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-			print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-			print(ExceptionObject)
-			pass
+			self._logger.log_exception(e)
 
-	def create_loaing_screen(self):
-		try:
-			if not self.scanning_loading_screen_running and not self.loading_screen:
-				self.scanning_loading_screen_running = True
+	def _should_process_frame(self) -> bool:
+		"""Check if enough time has passed to process the next frame."""
+		current_time = time.time()
+		if current_time - self._last_frame_time < self._frame_interval:
+			return False
+		self._last_frame_time = current_time
+		return True
 
-				self.loading_screen = customtkinter.CTkToplevel()
-				self.loading_screen.geometry("300x200")
-				self.loading_screen.resizable(
-					width = 0,
-					height = 0
-				)
+	def _downscale_frame(self, frame):
+		"""Downscale the frame to speed up processing."""
+		return cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
 
-				self.loading_screen.title("")
+	def _detect_faces(self, frame):
+		"""Detect faces using the HOG model."""
+		return face_recognition.face_locations(frame, model="hog")
 
-				if self.loading_screen:
-					label = customtkinter.CTkLabel(
-						self.loading_screen,
-						text="scanning....",
-						font=customtkinter.CTkFont(size = 15)
-					)
-					label.pack(pady = 60)
+	def _get_known_encodings(self):
+		"""Get all known face encodings from students."""
+		return [student.get_face_encode() for student in self._context.get_students()]
 
-		except Exception as e:
-			ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-			fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-			print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-			print(ExceptionObject)
-			pass
+	def _encode_faces(self, frame, face_locations):
+		"""Encode all detected faces."""
+		return face_recognition.face_encodings(frame, face_locations)
+
+	def _compare_faces(self, known_encodings, cam_face_encodings):
+		"""Compare target face encoding with known encodings."""
+		return face_recognition.compare_faces(known_encodings, cam_face_encodings, tolerance=0.5)
+
+	def _process_matches(self, matches):
+		"""Process matched faces and record attendance."""
+		for i, match in enumerate(matches):
+			if match:
+				with self._scan_lock:
+					student = self._context.get_students()[i]
+					if not student.is_attended():
+						self._record_attendance(student)
+						frequency = 2500
+						duration = 500  # 1 second
+						winsound.Beep(
+							frequency,
+							duration
+						)
+
+	def _record_attendance(self, student: Student):
+		"""Record attendance for a student."""
+		self._config.frame_processing_executor.submit(
+			insert_attendance,
+			student.student_id,
+			f"{student.first_name} {student.last_name}"
+		)
+		attendance = Attendance(student, datetime.now().strftime("%H:%M:%S"))
+		attendance.get_student().confirm_attendance()
+		self._context.get_current_class().add_attendance(attendance)

@@ -1,6 +1,5 @@
 import sys
 import os
-import threading
 import customtkinter
 
 from app.models import course
@@ -588,7 +587,7 @@ class Courses():
       for col in range(len(self.headers)):
         self.courses_table_frame.columnconfigure(col, weight=1)
 
-      threading.Thread(target=self.display_courses_table).start()
+      self._config.executor.submit(self.display_courses_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

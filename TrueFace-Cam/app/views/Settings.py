@@ -1,108 +1,70 @@
 import os
 import sys
 import customtkinter
-import threading
 
-from CTkMessagebox import CTkMessagebox
-from app.core.camera_module import Camera_Manager_Module
 from app.config.context import Context
 from app.config.configrations import Configrations
-from app.controllers.classes import get_current_teacher_classes
-from app.controllers.attendance import get_current_class_attendance
-from app.controllers.students import get_students_with_face_encode
+from app.controllers.classes import get_classes_by_teacher
+from app.controllers.attendance import get_attendance_by_class
+from app.controllers.students import get_students_by_class
+from CTkMessagebox import CTkMessagebox
 
 class Settings():
   def __init__(self):
-    self._camera_manager = Camera_Manager_Module()
-    self._data_manager = Context()
+    from app.core.camera_manager import CameraManager
+
+    self._camera_manager = CameraManager()
+    self._context = Context()
     self._config = Configrations()
 
-    get_current_teacher_classes()
+    self.current_class_entry = None
+    self.available_cameras_entry = None
 
+    self._load_classes()
+    self._load_cameras()
+
+  def _load_classes(self):
+    """Fetch classes for the current teacher and prepare ID-title map."""
+    get_classes_by_teacher()
     self.class_id_title_map = {
-      f"{class_.get_subject_area()} {class_.get_start_time()}-{class_.get_end_time()}": class_.get_class_id() for class_ in self._data_manager.get_current_teacher_classes()
+      f"{camera.subject_area} {camera.start_time}-{camera.end_time}": camera.class_id
+      for camera in self._context.get_classes()
     }
-    
-    self.class_start_time_map = {
-      f"{class_.get_subject_area()} {class_.get_start_time()}-{class_.get_end_time()}": class_.get_start_time() for class_ in self._data_manager.get_current_teacher_classes()
-    }
-    
+
+  def _load_cameras(self):
+    """Fetch available cameras and prepare name-index map."""
     self.cameras_key_map = {
-      camera.get_name(): camera.get_index() for camera in self._camera_manager.get_available_cameras()
+      cam.get_name(): cam.get_index()
+      for cam in self._camera_manager.camera_scanner.get_available_cameras()
     }
-  
+
   def update_current_camera(self, user_camera_selection):
-    self._camera_manager.set_current_camera(self.cameras_key_map[user_camera_selection])
-  
-  def update_lecture(self):
+    """Set the selected camera as current."""
+    self._camera_manager.set_current_camera(self.cameras_key_map.get(user_camera_selection))
+    self._show_message("Info", "Camera has been updated", "check")
+
+  def update_class(self):
+    """Set the selected class as current and fetch attendance."""
     self._config.loading_cursor_on()
+    try:
+      selected_id = self.class_id_title_map.get(self.current_class_entry.get())
+      ClassObject = next(
+        (class_ for class_ in self._context.get_classes() if class_.class_id == selected_id),
+        None
+      )
+      self._context.set_current_class(ClassObject)
+      get_attendance_by_class()
+      get_students_by_class()
 
-    self._data_manager.set_current_class(self.class_id_title_map[self.current_lecture_entry.get()])
-    self._data_manager.set_start_time(self.class_start_time_map[self.current_lecture_entry.get()])
-    get_students_with_face_encode()
-    get_current_class_attendance()
+    finally:
+      self._config.loading_cursor_off()
 
-    self._config.loading_cursor_off()
+    self._show_message("Info", "Class has been updated", "check")
 
-    title = "Info"
-    message = "Lecture has been updated"
-    icon = "check"
-    CTkMessagebox(
-      title = title,
-      message = message,
-      icon = icon
-    )
+  def _show_message(self, title, message, icon):
+    CTkMessagebox(title=title, message=message, icon=icon)
 
-  # def update_allowed_minutes(self):
-  #   self._data_manager.set_allowed_minutes(self.allowed_minutes_entry.get())
-  
-  # def update_settings(self):
-  #   try:
-  #     if not self.current_lecture_entry.get():
-  #       title = "Missing Entries"
-  #       message = "Please Select Current Lecture"
-  #       icon = "cancel"
-  #       CTkMessagebox(
-  #         title = title,
-  #         message = message,
-  #         icon = icon
-  #       )
-  #       return
-
-  #     if not self.allowed_minutes_entry.get():
-  #       title = "Missing Entries"
-  #       message = "Please Enter Allowed Late Time"
-  #       icon="cancel"
-  #       CTkMessagebox(
-  #         title = title,
-  #         message = message,
-  #         icon = icon
-  #       )
-  #       return
-
-  #     self._data_manager.set_current_class(self.class_id_title_map[self.current_lecture_entry.get()])
-  #     self._data_manager.set_start_time(self.class_start_time_map[self.current_lecture_entry.get()])
-  #     self._data_manager.set_allowed_minutes(self.allowed_minutes_entry.get())
-
-  #     get_students_with_face_encode()
-  #     get_current_class_attendance()
-
-  #     title = "Info"
-  #     message = "Settings has been updated"
-  #     icon = "check"
-  #     CTkMessagebox(
-  #       title = title,
-  #       message = message,
-  #       icon = icon
-  #     )
-
-  #   except Exception as e:
-  #     ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-  #     fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-  #     print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-  #     print(ExceptionObject)
-
-  def lunch_view(self, parent):
+  def launch_view(self, parent):
     try:
       content_frame = customtkinter.CTkFrame(parent)
       content_frame.pack(
@@ -110,52 +72,29 @@ class Settings():
         pady = 20
       )
 
-      current_lecture_label = customtkinter.CTkLabel(
+      current_class_label = customtkinter.CTkLabel(
         content_frame,
-        text = "Current Lecture:"
+        text = "Current class:"
       )
-      current_lecture_label.grid(
+      current_class_label.grid(
         row = 5,
         column = 0,
         padx = 10,
         pady = 10
       )
 
-      self.current_lecture_entry = customtkinter.CTkComboBox(
+      self.current_class_entry = customtkinter.CTkComboBox(
         content_frame,
-        values = [f"{class_.get_subject_area()} {class_.get_start_time()}-{class_.get_end_time()}" for class_ in self._data_manager.get_current_teacher_classes()],
+        values = [f"{class_.subject_area} {class_.start_time}-{class_.end_time}" for class_ in self._context.get_classes()],
         width = 400,
-        command = lambda _: threading.Thread(target=self.update_lecture).start()
+        command = lambda _: self._config.frame_processing_executor.submit(self.update_class)
       )
-      self.current_lecture_entry.grid(
+      self.current_class_entry.grid(
         row = 5,
         column = 1,
         padx = 10,
         pady = 10
       )
-      self.current_lecture_entry.set("none")
-
-      # allowed_minutes_label = customtkinter.CTkLabel(
-      #   content_frame,
-      #   text = "Allowed Minutes:"
-      # )
-      # allowed_minutes_label.grid(
-      #   row = 6,
-      #   column = 0,
-      #   padx = 10,
-      #   pady = 10
-      # )
-
-      # self.allowed_minutes_entry = customtkinter.CTkEntry(
-      #   content_frame,
-      #   width = 400
-      # )
-      # self.allowed_minutes_entry.grid(
-      #   row = 6,
-      #   column = 1,
-      #   padx = 10,
-      #   pady = 10
-      # )
 
       available_cameras_label = customtkinter.CTkLabel(
         content_frame,
@@ -180,7 +119,7 @@ class Settings():
         padx = 10,
         pady = 10
       )
-      self.available_cameras_entry.set("none")
+      self.available_cameras_entry.set(self.cameras_key_map.get(self._camera_manager.get_current_camera()) or "No Camera Selected")
 
       view_camera_button = customtkinter.CTkButton(
         content_frame,
@@ -194,19 +133,6 @@ class Settings():
         pady = 10,
         sticky = "nsew",
       )
-
-      # save_button = customtkinter.CTkButton(
-      #   content_frame,
-      #   text = "Update Settings",
-      #   command = lambda: threading.Thread(target=self.update_settings).start()
-      # )
-      # save_button.grid(
-      #   row = 9,
-      #   columnspan = 2,
-      #   padx = 10,
-      #   pady = 10,
-      #   sticky = "nsew",
-      # )
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

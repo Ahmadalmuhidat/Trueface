@@ -1,25 +1,26 @@
-import os
-import sys
 import requests
 import json
 
 from CTkMessagebox import CTkMessagebox
 from app.config.context import Context
+from app.core.logger import Logger
 
-def get_current_teacher_classes():
+LOGGER = Logger()
+
+def get_classes_by_teacher():
   try:
-    database_manager = Context()
+    context = Context()
     data = {
-      "current_teacher": database_manager.get_token()
+      "current_teacher": context.get_jwt_token()
     }
     response = requests.get(
-      database_manager.get_config().get_base_url() + "/get_current_teacher_classes",
+      context.get_config().get_backend_endpoint() + "/get_classes_by_teacher",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))
 
     if response.get("status_code") == 200:
-      database_manager.set_current_teacher_classes(response.get("data"))
+      context.set_classes(response.get("data"))
     else:
       title = "Error"
       message = response.get("error")
@@ -31,8 +32,5 @@ def get_current_teacher_classes():
       )
 
   except Exception as e:
-    ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-    fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-    print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-    print(ExceptionObject)
+    LOGGER.log_exception(e)
     pass

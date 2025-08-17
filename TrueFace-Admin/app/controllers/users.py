@@ -10,7 +10,7 @@ from app.config.context import Context
 def get_users() -> list:
 	try:
 		data_manager = Context()
-		response = requests.get(data_manager.get_config().get_base_url() + "/get_users").content
+		response = requests.get(data_manager.get_config().get_base_url() + "/get_users", timeout=20).content
 		response = json.loads(response.decode('utf-8'))
 		data_manager = Context()
 
@@ -43,7 +43,8 @@ def add_user(user_object: User) -> None:
 		data_manager = Context()
 		response = requests.post(
 			data_manager.get_config().get_base_url() + "/insert_user",
-			data = data
+			data = data,
+			timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 
@@ -93,7 +94,8 @@ def remove_user(user_id: str, refresh_table_function) -> None:
 			data_manager = Context()
 			response = requests.post(
 				data_manager.get_config().get_base_url() + "/remove_user",
-				data = data
+				data = data,
+			  timeout=20
 			).content
 			response = json.loads(response.decode('utf-8'))
 
@@ -128,7 +130,8 @@ def search_user(user_id: str) -> list:
 		data_manager = Context()
 		response = requests.get(
 			data_manager.get_config().get_base_url() + "/search_user",
-			params = data
+			params = data,
+			timeout=20
 		).content
 		response = json.loads(response.decode('utf-8'))
 		data_manager = Context()

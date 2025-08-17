@@ -1,11 +1,12 @@
-import os
-import sys
 import cv2
+
+from app.core.logger import Logger
 
 class Camera:
   def __init__(self, index, name):
     self._name = name
     self._index = index
+    self._logger = Logger()
   
   def get_name(self):
     return self._name
@@ -13,7 +14,7 @@ class Camera:
   def get_index(self):
     return self._index
   
-  def test(self):
+  def test_if_working(self):
     try:
       camera = cv2.VideoCapture(self._index)
 
@@ -27,13 +28,10 @@ class Camera:
       return False
 
     except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+      self._logger.log_exception(e)
       pass
 
-  def view(self):
+  def view_stream(self):
     try:
       cap = cv2.VideoCapture(self._index)
       WindowTitle = "Camera View"
@@ -53,8 +51,5 @@ class Camera:
       cv2.destroyAllWindows()
 
     except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+      self._logger.log_exception(e)
       pass

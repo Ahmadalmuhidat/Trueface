@@ -16,7 +16,8 @@ def login(email, password) -> str:
 
     response = requests.get(
       data_manager.get_config().get_base_url() + "/check_user",
-      params=data
+      params=data,
+      timeout=20
     ).content
     response = json.loads(response.decode('utf-8'))
 

@@ -1,16 +1,14 @@
 import sys
 import os
-import threading
 import customtkinter
 
 from app.config.context import Context
 from app.config.configrations import Configrations
-from app.controllers.students import get_current_class_students
 from CTkMessagebox import CTkMessagebox
 
 class Students():
   def __init__(self):
-    self._data_manager = Context()
+    self._context = Context()
     self._config = Configrations()
 
     self.students = []
@@ -24,38 +22,32 @@ class Students():
 
   def display_students_table(self):
     try:
-      self._config.loading_cursor_on()
-
-      get_current_class_students
-
-      self._config.loading_cursor_off()
-
       for label in self.students:
         label.destroy()
 
-      if len(self._data_manager.get_current_class_students()) > 0:
-        for row, student in enumerate(self._data_manager.get_current_class_students(), start = 1):
+      if len(self._context.get_students()) > 0:
+        for row, student in enumerate(self._context.get_students(), start=1):
           student_row = [
-            student.get_student_id(),
-            student.get_first_name(),
-            student.get_middle_name(),
-            student.get_last_name(),
-            student.get_gender()
+            student.student_id,
+            student.first_name,
+            student.middle_name,
+            student.last_name,
+            student.gender
           ]
 
           for col, data in enumerate(student_row):
-              student_data = customtkinter.CTkLabel(
-                self.students_table_frame,
-                text = data,
-                padx = 10,
-                pady = 5
-              )
-              student_data.grid(
-                row = row,
-                column = col,
-                sticky = "nsew"
-              )
-              self.students.append(student_data)
+            student_data = customtkinter.CTkLabel(
+              self.students_table_frame,
+              text = data,
+              padx = 10,
+              pady = 5
+            )
+            student_data.grid(
+              row = row,
+              column = col,
+              sticky = "nsew"
+            )
+            self.students.append(student_data)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
@@ -65,9 +57,9 @@ class Students():
   
   def refresh(self):
     try:
-      if not self._data_manager.get_current_class():
+      if not self._context.get_current_class():
           title = "Error"
-          message = "Please select a lecture from the settings"
+          message = "Please select a class from the settings"
           icon = "cancel"
           CTkMessagebox(
             title=title,
@@ -76,7 +68,7 @@ class Students():
           )
           return
 
-      threading.Thread(target=self.display_students_table).start()
+      self._config.frame_processing_executor.submit(self.display_students_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
@@ -84,7 +76,7 @@ class Students():
       print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
       print(ExceptionObject)
 
-  def lunch_view(self, parent):
+  def launch_view(self, parent):
     try:
       search_bar_frame = customtkinter.CTkFrame(
         parent,
@@ -134,7 +126,7 @@ class Students():
           weight = 1
         )
       
-      threading.Thread(target=self.display_students_table).start()
+      self._config.frame_processing_executor.submit(self.display_students_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

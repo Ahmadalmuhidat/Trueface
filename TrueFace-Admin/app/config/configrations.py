@@ -1,3 +1,7 @@
+import threading
+
+from concurrent.futures import ThreadPoolExecutor
+
 class Configrations:
   # static
   window = None
@@ -15,8 +19,16 @@ class Configrations:
     if self.__class__._initialized:
       return
     self.__class__._initialized = True
+
     # private
-    self._base_url = "http://localhost:8000/admin"
+    self._base_url = "http://34.29.161.87:8000/admin"
+
+    # threading
+    self.executor = ThreadPoolExecutor(max_workers=4)
+    self.shutdown_event = threading.Event()
+    self.pause_event = threading.Event()
+
+    self.pause_event.set()
 
   @classmethod
   def loading_cursor_on(cls):

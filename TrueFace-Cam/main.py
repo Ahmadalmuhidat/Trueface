@@ -2,126 +2,107 @@ import os
 import sys
 import customtkinter
 
-import app.views.Login as Login
-import app.views.Home as Home
-import app.views.Attendance as Attendance
-import app.views.Settings as Settings
-import app.views.Students as Students
+import app.views.login as Login
+import app.views.home as Home
+import app.views.attendance as Attendance
+import app.views.settings as Settings
+import app.views.students as Students
 
 from app.config.configrations import Configrations
-from app.core.camera_module import Camera_Manager_Module
+from app.core.camera_manager import CameraManager
 from CTkMessagebox import CTkMessagebox
 from app.config.router import Router
 
-class Main():
+class Main:
   def __init__(self):
     try:
       self._config = Configrations()
-      self._camera_manager = Camera_Manager_Module()
+      self._camera_manager = CameraManager()
       self._router = Router()
+      self.window = None
 
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      FileName = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, FileName, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+    except Exception:
+      self._log_exception()
 
   def create_navbar(self):
+    """Build the navigation bar and buttons."""
     try:
       navbar = customtkinter.CTkFrame(self.window)
       navbar.pack(fill=customtkinter.X)
 
-      home_view = customtkinter.CTkButton(
-        navbar,
-        corner_radius = 0,
-        command = lambda: self._router.navigate(Home.Home),
-        text = "Home"
-      )
-      home_view.pack(side = customtkinter.LEFT)
+      self._add_nav_button(navbar, "Home", Home.Home)
+      self._add_nav_button(navbar, "Attendance", Attendance.Attendance)
+      self._add_nav_button(navbar, "Students", Students.Students)
+      self._add_nav_button(navbar, "Settings", Settings.Settings)
 
-      attendance_view = customtkinter.CTkButton(
-        navbar,
-        corner_radius = 0,
-        command = lambda: self._router.navigate(Attendance.Attendance),
-        text = "Attendance"
-      )
-      attendance_view.pack(side = customtkinter.LEFT)
+    except Exception:
+      self._log_exception()
 
-      students_view = customtkinter.CTkButton(
-        navbar,
-        corner_radius = 0,
-        command = lambda: self._router.navigate(Students.Students),
-        text = "Students"
-      )
-      students_view.pack(side = customtkinter.LEFT)
-
-      settings_view = customtkinter.CTkButton(
-        navbar,
-        corner_radius = 0,
-        command = lambda: self._router.navigate(Settings.Settings),
-        text = "Settings"
-      )
-      settings_view.pack(side = customtkinter.LEFT)
-
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+  def _add_nav_button(self, parent, text, view_class):
+    """Helper to add a navigation button."""
+    btn = customtkinter.CTkButton(
+      parent,
+      corner_radius=0,
+      command=lambda: self._router.navigate(view_class),
+      text=text
+    )
+    btn.pack(side=customtkinter.LEFT)
 
   def when_app_close(self):
+    """Handle application close event."""
     try:
-      if self._camera_manager.get_activate_capturing():
-        title = "Error"
-        icon = "cancel"
-        CTkMessagebox(
-          title = title,
-          message = "Please stop the camera first",
-          icon = icon
-        )
+      if self._camera_manager.get_capturing_is_active():
+        self._show_message("Error", "Please stop the camera first", "cancel")
         return
 
+      # TODO: Shut down all threads if applicable
       self.window.destroy()
       sys.exit(0)
 
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+    except Exception:
+      self._log_exception()
 
   def start_program(self):
+    """Initialize and start the main application."""
     try:
-      self.window = customtkinter.CTk()
-
+      self._init_window()
       self._config.set_window(self.window)
-      self._camera_manager.get_working_cameras()
-    
-      width = self.window.winfo_screenwidth()
-      height = self.window.winfo_screenheight()
-      self.window.geometry("%dx%d" % (width, height))
-      self.window.iconbitmap("logo.ico")
-
-      self.window.title("TrueFace Camera")
-
-      self.window.protocol(
-        "WM_DELETE_WINDOW",
-        self.when_app_close
-      )
+      self._camera_manager.scan_connected_cameras()
 
       self.create_navbar()
       self._router.navigate(Home.Home)
 
       self.window.mainloop()
 
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
+    except Exception:
+      self._log_exception()
     except KeyboardInterrupt:
       pass
 
+  def _init_window(self):
+    """Set up main application window."""
+    self.window = customtkinter.CTk()
+
+    # Fullscreen dimensions
+    width = self.window.winfo_screenwidth()
+    height = self.window.winfo_screenheight()
+    self.window.geometry(f"{width}x{height}")
+
+    # Icon, title, close protocol
+    self.window.iconbitmap("logo.ico")
+    self.window.title("TrueFace Camera")
+    self.window.protocol("WM_DELETE_WINDOW", self.when_app_close)
+
+  def _show_message(self, title, message, icon):
+    CTkMessagebox(title=title, message=message, icon=icon)
+
+  def _log_exception(self):
+    """Log exception details for debugging."""
+    ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
+    fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
+    print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
+    print(ExceptionObject)
+
 if __name__ == "__main__":
   # Main().start_program()
-  Login.Login().lunch_view()
+  Login.Login().launch_view()
