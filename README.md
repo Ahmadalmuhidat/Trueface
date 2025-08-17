@@ -8,7 +8,6 @@ TrueFace is an advanced attendance management solution that leverages **real-tim
 * **Effortless Face Recognition:** Automatically records attendance using state-of-the-art facial recognition.
 * **Real-Time Data Capture:** Processes and updates attendance records instantly, ensuring up-to-the-minute accuracy.
 * **Robust Django API:** Features a powerful backend API built with Django, facilitating efficient data management and interaction.
-* **Dockerized Deployment:** Ensures easy and consistent deployment across environments with full Docker support and automated pushes to DockerHub.
 * **Flexible Database Integration:** Offers easily configurable database connections, supporting various relational databases beyond just MySQL.
 
 ---
