@@ -21,28 +21,6 @@ def GetCourses(request):
   }, status=405)
 
 @csrf_exempt
-def SearchCourses(request):
-  if request.method == "GET":
-    try:
-      data = [course_id]
-      course_id = request.GET.get("course_id")
-      query = '''
-        SELECT
-          *
-        FROM
-          Courses
-        WHERE
-          ID = %s
-      '''
-      data = Database.ExecuteGetQuery(query, data)
-      return JsonResponse({"status_code": 200, "data": data})
-    except Exception as e:
-      return JsonResponse({"error": str(e)}, status=500)
-  return JsonResponse({
-    "error": "Method not allowed"
-  }, status=405)
-
-@csrf_exempt
 def RemoveCourse(request):
   if request.method == "POST":
     try:

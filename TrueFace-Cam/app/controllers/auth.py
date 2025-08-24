@@ -1,10 +1,11 @@
 import requests
 import json
 
-from CTkMessagebox import CTkMessagebox
-from app.core.logger import Logger
+from app.helper.logger import Logger
+from app.helper.alerts_manager import AlertsManager
 
 LOGGER = Logger()
+ALERTS_MANAGR = AlertsManager()
 
 def login(email, password):
   try:
@@ -21,13 +22,10 @@ def login(email, password):
     if response.get("status_code") == 200:
       return response.get("data")
     else:
-      title = "Error"
-      message = response.get("error")
-      icon = "cancel"
-      CTkMessagebox(
-        title = title,
-        message = message if message else "Something went wrong while checking user info",
-        icon = icon
+      ALERTS_MANAGR.pop_window(
+        title = "Error",
+        message = response.get("error") if response.get("error") else "Something went wrong while logging in",
+        icon = "cancel"
       )
 
   except Exception as e: 

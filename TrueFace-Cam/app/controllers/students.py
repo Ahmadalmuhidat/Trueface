@@ -2,16 +2,19 @@ import requests
 import json
 
 from app.config.context import Context
-from CTkMessagebox import CTkMessagebox
-from app.core.logger import Logger
+from app.config.configrations import Configrations
+from app.helper.logger import Logger
+from app.helper.alerts_manager import AlertsManager
 
 LOGGER = Logger()
+ALERTS_MANAGR = AlertsManager()
+CONTEXT = Context()
+CONFIGRATIONS = Configrations()
 
-def get_students_by_class():
+def get_students_by_lecture():
   try:
-    context = Context()
-    if not context.current_class:
-      CTkMessagebox(
+    if not CONTEXT.get_current_lecture():
+      ALERTS_MANAGR.pop_window(
         title="Error",
         message="Please select a class first.",
         icon="cancel"
@@ -19,21 +22,21 @@ def get_students_by_class():
       return
 
     data = {
-      "current_class": context.get_current_class().class_id
+      "current_class": CONTEXT.get_current_lecture().class_id
     }
     response = requests.get(
-      context.get_config().get_backend_endpoint() + "/get_students_by_class",
+      CONFIGRATIONS.get_backend_endpoint() + "lectures/get_students",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))
 
     if response.get("status_code") == 200:
-      context.set_students(response.get("data"))
+      CONTEXT.set_students(response.get("data"))
     else:
       title = "Error"
       message = response.get("error")
       icon = "cancel"
-      CTkMessagebox(
+      ALERTS_MANAGR.pop_window(
         title = title,
         message = message if message else "Something went wrong while getting the students",
         icon = icon

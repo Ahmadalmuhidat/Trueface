@@ -3,10 +3,10 @@ import os
 import customtkinter
 import pandas
 
-from CTkMessagebox import CTkMessagebox
 from app.config.context import Context
 from app.config.configrations import Configrations
 from app.controllers.attendance import search_attendance
+from app.helper.alerts_manager import AlertsManager
 
 class Attendance():
   def __init__(self):
@@ -16,26 +16,28 @@ class Attendance():
       "First Name",
       "Middle Name",
       "Last Name",
+      "Attended",
       "Attendance Time"
     ]
     self._context = Context()
     self._config = Configrations()
+    self._alert = AlertsManager()
 
-  def generate_report(self):
+  def _generate_report(self):
     try:
       self._config.loading_cursor_on()
 
       report = pandas.DataFrame(
         [
           [
-            attendance.get_student().student_id,
-            attendance.get_student().first_name,
-            attendance.get_student().middle_name,
-            attendance.get_student().last_name,
-            attendance.get_student().is_attended(),
-            attendance.get_time()
+            attendance.student_id,
+            attendance.first_name,
+            attendance.middle_name,
+            attendance.last_name,
+            attendance.is_attended(),
+            attendance.time
           ]
-          for attendance in self._context.current_class.get_attendance()
+          for attendance in self._context.get_students()
         ],
         columns=[
           "Student ID",
@@ -54,14 +56,10 @@ class Attendance():
         file_path,
         index = False
       )
-
-      title = "Generate complete"
-      message = "you can find the report in {}".format(downloads_folder)
-      icon = "check"
-      CTkMessagebox(
-        title = title,
-        message = message,
-        icon = icon
+      self._alert.pop_window(
+        title = "Generate complete",
+        message = "fyou can find the report in {downloads_folder}",
+        icon = "check"
       )
 
       self._config.loading_cursor_off()
@@ -72,19 +70,20 @@ class Attendance():
       print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
       print(ExceptionObject)
 
-  def display_attendance_table(self):
+  def _display_attendance_table(self):
     try:
       for label in self._attendance:
         label.destroy()
 
-      if len(self._context.get_attendance()) > 0:
-        for row, attendance in enumerate(self._context.get_attendance(), start = 1):
+      if len(self._context.get_students()) > 0:
+        for row, student in enumerate(self._context.get_students(), start=1):
           attendance_row = [
-            attendance.get_student().student_id,
-            attendance.get_student().first_name,
-            attendance.get_student().middle_name,
-            attendance.get_student().last_name,
-            attendance.get_time()
+            student.student_id,
+            student.first_name,
+            student.middle_name,
+            student.last_name,
+            student.is_attended(),
+            student.time
           ]
 
           for col, data in enumerate(attendance_row):
@@ -100,6 +99,12 @@ class Attendance():
               sticky = "nsew"
             )
             self._attendance.append(attendance_data)
+      else:
+        self._alert.pop_window(
+          "No Student Available",
+          "Please select a lecture from the setting page",
+          "cancel"
+        )
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
@@ -107,20 +112,17 @@ class Attendance():
       print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
       print(ExceptionObject)
   
-  def refresh(self):
+  def _refresh(self):
     try:
-      if not self._context.get_current_class():
-        title = "Error"
-        message = "Please select a class from the settings"
-        icon = "cancel"
-        CTkMessagebox(
-          title = title,
-          message = message,
-          icon = icon
+      if not self._context.get_current_lecture():
+        self._alert.pop_window(
+          "Error",
+          "Please select a class from the settings",
+          "cancel"
         )
         return
 
-      self._config.frame_processing_executor.submit(self.display_attendance_table)
+      self._config.frame_processing_executor.submit(self._display_attendance_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
@@ -128,12 +130,12 @@ class Attendance():
       print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
       print(ExceptionObject)
 
-  def search(self, term):
+  def _search(self, term):
     try:
       self._config.loading_cursor_on()
 
       search_attendance(term)
-      self.display_attendance_table()
+      self._display_attendance_table()
 
       self._config.loading_cursor_off()
 
@@ -156,7 +158,7 @@ class Attendance():
 
       search_button = customtkinter.CTkButton(
         search_bar_frame,
-        command = lambda: self._config.frame_processing_executor.submit(self.search,search_bar.get()),
+        command = lambda: self._config.frame_processing_executor.submit(self._search,search_bar.get()),
         text = "Search"
       )
       search_button.grid(
@@ -181,7 +183,7 @@ class Attendance():
 
       refresh_button = customtkinter.CTkButton(
         search_bar_frame,
-        command = self.refresh,
+        command = self._refresh,
         width = 100,
         text = "Refresh"
       )
@@ -195,7 +197,7 @@ class Attendance():
 
       report_button = customtkinter.CTkButton(
         search_bar_frame,
-        command = self.generate_report,
+        command = self._generate_report,
         width = 100,
         text = "Generate Report"
       )
@@ -232,7 +234,7 @@ class Attendance():
           weight = 1
         )
       
-      self._config.frame_processing_executor.submit(self.display_attendance_table)
+      self._config.frame_processing_executor.submit(self._display_attendance_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

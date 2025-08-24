@@ -10,7 +10,7 @@ class Login():
   def __init__(self):
     self._context = Context()
 
-  def login(self):
+  def _login(self):
     email = self.email_entry.get()
     password = self.password_entry.get()
 
@@ -83,7 +83,7 @@ class Login():
       save_button = customtkinter.CTkButton(
         content_frame,
         text = "Login",
-        command = self.login
+        command = self._login
       )
       save_button.grid(
         row = 6,

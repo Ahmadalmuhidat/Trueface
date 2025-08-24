@@ -4,12 +4,13 @@ import customtkinter
 
 from app.config.context import Context
 from app.config.configrations import Configrations
-from CTkMessagebox import CTkMessagebox
+from app.helper.alerts_manager import AlertsManager
 
 class Students():
   def __init__(self):
     self._context = Context()
     self._config = Configrations()
+    self._alert = AlertsManager()
 
     self.students = []
     self.headers = [
@@ -20,7 +21,7 @@ class Students():
       "Gender"
     ]
 
-  def display_students_table(self):
+  def _display_students_table(self):
     try:
       for label in self.students:
         label.destroy()
@@ -48,27 +49,30 @@ class Students():
               sticky = "nsew"
             )
             self.students.append(student_data)
-
+      else:
+        self._alert.pop_window(
+          "No Student Available",
+          "Please select a lecture from the setting page",
+          "cancel"
+        )
+  
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
       fname = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
       print(ExceptionType, fname, ExceptionTraceBack.tb_lineno)
       print(ExceptionObject)
   
-  def refresh(self):
+  def _refresh(self):
     try:
-      if not self._context.get_current_class():
-          title = "Error"
-          message = "Please select a class from the settings"
-          icon = "cancel"
-          CTkMessagebox(
-            title=title,
-            message=message,
-            icon=icon
+      if not self._context.get_current_lecture():
+          self._alert.pop_window(
+            "Error",
+            "Please select a class from the settings",
+            "cancel"
           )
           return
 
-      self._config.frame_processing_executor.submit(self.display_students_table)
+      self._config.frame_processing_executor.submit(self._display_students_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
@@ -89,7 +93,7 @@ class Students():
 
       refresh_button = customtkinter.CTkButton(
         search_bar_frame,
-        command = self.refresh,
+        command = self._refresh,
         width = 100,
         text = "Refresh"
       )
@@ -126,7 +130,7 @@ class Students():
           weight = 1
         )
       
-      self._config.frame_processing_executor.submit(self.display_students_table)
+      self._config.frame_processing_executor.submit(self._display_students_table)
 
     except Exception as e:
       ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()

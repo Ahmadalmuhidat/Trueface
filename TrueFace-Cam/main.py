@@ -10,9 +10,9 @@ import app.views.students as Students
 
 from app.config.configrations import Configrations
 from app.core.camera_manager import CameraManager
-from CTkMessagebox import CTkMessagebox
 from app.config.router import Router
-from app.core.logger import Logger
+from app.helper.logger import Logger
+from app.helper.alerts_manager import AlertsManager
 
 customtkinter.set_appearance_mode("dark")
 
@@ -23,6 +23,8 @@ class Main:
       self._camera_manager = CameraManager()
       self._router = Router()
       self._logger = Logger()
+      self._alert = AlertsManager()
+
       self.window = None
 
     except Exception as e:
@@ -56,7 +58,7 @@ class Main:
     """Handle application close event."""
     try:
       if self._camera_manager.get_capturing_is_active():
-        self._show_message("Error", "Please stop the camera first", "cancel")
+        self._alert.pop_window("Error", "Please stop the camera first", "cancel")
         return
 
       self._config.shutdown_event.set()
@@ -100,9 +102,6 @@ class Main:
     self.window.iconbitmap("logo.ico")
     self.window.title("TrueFace Camera")
     self.window.protocol("WM_DELETE_WINDOW", self.when_app_close)
-
-  def _show_message(self, title, message, icon):
-    CTkMessagebox(title=title, message=message, icon=icon)
 
 if __name__ == "__main__":
   # Main().start_program()

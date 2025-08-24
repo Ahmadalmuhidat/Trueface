@@ -1,6 +1,6 @@
 import cv2
 
-from app.core.logger import Logger
+from app.helper.logger import Logger
 
 class Camera:
   def __init__(self, index, name):

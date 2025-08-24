@@ -2,9 +2,9 @@ import cv2
 
 from app.core.face_recognition_module import FaceRecognitionModule
 from app.config.configrations import Configrations
-from CTkMessagebox import CTkMessagebox
-from app.core.logger import Logger
+from app.helper.logger import Logger
 from app.config.context import Context
+from app.helper.alerts_manager import AlertsManager
 
 class FrameProcessor:
   def __init__(self):
@@ -12,12 +12,17 @@ class FrameProcessor:
     self._config = Configrations()
     self._context = Context()
     self._logger = Logger()
+    self._alert = AlertsManager()
 
     self._capture_thread_id = None
 
   def start(self, current_camera_index):
-    if not self._context.get_current_class():
-      self._alert("Error", "Please select a class from the settings")
+    if not self._context.get_current_lecture():
+      self._alert.pop_window(
+        "Error",
+        "Please select a class from the settings",
+        "info"
+      )
       return
 
     self._capture_thread_id = self._config.frame_processing_executor.submit(self._capture_loop, current_camera_index)
@@ -26,6 +31,7 @@ class FrameProcessor:
     if self._capture_thread_id:
       try:
         self._capture_thread_id.result(timeout=5)
+
       except Exception as e:
         print("Error while waiting for capture to finish:", e)
       self._capture_thread_id = None
@@ -51,6 +57,3 @@ class FrameProcessor:
 
     except Exception as e:
       self._logger.log_exception(e)
-
-  def _alert(self, title, message):
-    CTkMessagebox(title=title, message=message, icon="cancel")

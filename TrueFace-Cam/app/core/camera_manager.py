@@ -1,11 +1,10 @@
-import threading
-
 from app.core.camera_scanner import CameraScanner
 from app.core.camera_viewer import CameraViewer
 from app.core.frame_processor import FrameProcessor
 from app.config.context import Context
 from app.core.face_recognition_module import FaceRecognitionModule
 from app.config.configrations import Configrations
+from app.helper.alerts_manager import AlertsManager
 
 class CameraManager:
   _instance = None
@@ -24,6 +23,7 @@ class CameraManager:
     self._context = Context()
     self._config = Configrations()
     self._face_recognition_module = FaceRecognitionModule()
+    self._alert = AlertsManager()
 
     self._current_camera_index = 0
     self._capturing_is_active = False
@@ -45,23 +45,43 @@ class CameraManager:
     return self._capturing_is_active
 
   def scan_connected_cameras(self):
-    self.camera_scanner.scan()
+    self.camera_scanner.scan_connected_cameras()
     return self.camera_scanner.get_available_cameras()
 
   def view_current_camera_stream(self):
-    if self.get_capturing_is_active():
-      # self._alert("Not Allowed", "Please make sure the camera is not already operating")
+    if not self.camera_scanner.found_active_connected_camera:
+      self._alert.pop_window(
+        "Not Allowed",
+        "Please make sure you connected at least one camera",
+        "cancel"
+      )
       return
 
-    self.camera_viewer.view_camera(self._current_camera_index, self.camera_scanner.get_available_cameras())
+    if self.get_capturing_is_active():
+      self._alert.pop_window(
+        "Not Allowed",
+        "Please make sure the camera is not already operating",
+        "cancel"
+      )
+      return
+
+    self.camera_viewer.view_camera(self._current_camera_index, self.camera_scanner._available_cameras)
 
   def start_capturing(self):
     if self.get_capturing_is_active():
-      # self._alert("Not Allowed", "Please make sure the camera is not already operating")
+      self._alert.pop_window(
+        "Not Allowed",
+        "Please make sure the camera is not already operating",
+        "info"
+      )
       return
 
     if not self.camera_scanner.found_active_connected_camera:
-      # self._alert("Error", "Failed to find active cameras")
+      self._alert.pop_window(
+        "Error",
+        "Failed to find active cameras",
+        "cancel"
+      )
       return
 
     self.set_capturing_is_active(True)
@@ -70,7 +90,11 @@ class CameraManager:
 
   def stop_capturing(self):
     if not self.get_capturing_is_active():
-      # self._alert("Action Failed", "Camera is not capturing")
+      self._alert.pop_window(
+        "Action Failed",
+        "Camera is not capturing",
+        "cancel"
+      )
       return
     
     self.set_capturing_is_active(False)

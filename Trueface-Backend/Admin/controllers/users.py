@@ -59,30 +59,6 @@ def GetUsers(request):
   }, status=405)
 
 @csrf_exempt
-def SearchUser(request):
-  if request.method == "GET":
-    user_id = request.GET.get("user_id")
-    data = [user_id]
-    query = '''
-      SELECT
-        ID,
-        Name,
-        Email,
-        Role
-      FROM
-        Users
-      WHERE
-        ID = %s
-    '''
-    return JsonResponse({
-      "status_code": 200,
-      "data": Database.ExecuteGetQuery(query, data)
-    })
-  return JsonResponse({
-    "error": "Method not allowed"
-  }, status=405)
-
-@csrf_exempt
 def RemoveUser(request):
   if request.method == "POST":
     user_id = request.POST.get("user_id")

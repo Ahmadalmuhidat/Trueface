@@ -1,36 +1,29 @@
 from django.urls import path
-from .controllers import users, students, classes, courses
+from .controllers import lectures, users, students, courses
 
 urlpatterns = [
   # users
-  path('insert_user', users.InsertUser),
-  path('get_users', users.GetUsers),
-  path('search_user', users.SearchUser),
-  path('remove_user', users.RemoveUser),
+  path('users/get_all', users.GetUsers),
+  path('users/insert', users.InsertUser),
+  path('users/remove', users.RemoveUser),
   path('login', users.login),
 
   # students
-  path('insert_student', students.InsertStudent),
-  path('remove_student', students.RemoveStudent),
-  path('get_all_students', students.GetAllStudents),
-  path('search_student', students.SearchStudent),
-  path('get_students_count', students.GetStudentsCount),
-  path('check_duplicated_student_id', students.CheckDuplicatedStudentId), # remove
+  path('students/insert', students.InsertStudent),
+  path('students/remove', students.RemoveStudent),
+  path('students/get_all', students.GetAllStudents),
 
-  # classes
-  path('get_classes', classes.GetClasses),
-  path('search_class', classes.SearchClass),
-  path('remove_class', classes.RemoveClass),
-  path('insert_class_student_relation', classes.InsertClassStudentRelation),
-  path('clear_class_student_relation', classes.ClearClassStudentRelation),
-  path('insert_class', classes.InsertClass),
-  path('get_classes_student_relation', classes.GetClassesStudentRelation),
-  path('remove_class_student_relation', classes.RemoveClassStudentRelation),
-  path('get_classes_for_selection', classes.GetClassesForSelection), # remove
+  # lectures
+  path('lectures/get_all', lectures.GetLectures),
+  path('lectures/remove', lectures.RemoveLecture),
+  path('lectures/insert', lectures.InsertLecture),
+  path('lectures/add_student', lectures.AddStudentToLecture),
+  path('lectures/clear', lectures.ClearLecture),
+  path('lectures/get_students', lectures.GetStudentLectures), # remove
+  path('lectures/remove_student', lectures.RemoveStudentFromLecture),
 
   # courses
-  path("get_courses", courses.GetCourses),
-  path("search_courses", courses.SearchCourses),
-  path("remove_course", courses.RemoveCourse),
-  path("insert_course", courses.InsertCourse)
+  path("courses/get_all", courses.GetCourses),
+  path("courses/remove", courses.RemoveCourse),
+  path("courses/insert", courses.InsertCourse)
 ]

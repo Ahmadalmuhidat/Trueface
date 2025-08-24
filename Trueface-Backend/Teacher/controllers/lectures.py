@@ -1,11 +1,10 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from datetime import date
 from ..utils.database import Database
 from ..helper import json_web_token
 
 @csrf_exempt
-def GetClassesByTeacher(request):
+def GetLecturesByTeacher(request):
   if request.method == "GET":
     current_teacher = json_web_token.validate_token(
       request.GET.get("current_teacher")
