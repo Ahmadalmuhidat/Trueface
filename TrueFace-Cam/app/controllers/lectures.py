@@ -17,7 +17,7 @@ def get_lectures_by_teacher():
       "current_teacher": CONTEXT.get_jwt_token()
     }
     response = requests.get(
-      CONFIGRATIONS.get_backend_endpoint() + "lectures/get_by_teacher",
+      CONFIGRATIONS.get_backend_endpoint() + "/lectures/get_by_teacher",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))

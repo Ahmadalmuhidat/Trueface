@@ -25,7 +25,7 @@ def get_students_by_lecture():
       "current_class": CONTEXT.get_current_lecture().class_id
     }
     response = requests.get(
-      CONFIGRATIONS.get_backend_endpoint() + "lectures/get_students",
+      CONFIGRATIONS.get_backend_endpoint() + "/lectures/get_students",
       params = data
     ).content
     response = json.loads(response.decode('utf-8'))

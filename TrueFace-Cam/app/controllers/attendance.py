@@ -26,7 +26,7 @@ def insert_attendance(student_id, student_name):
       "current_class": CONTEXT.get_current_lecture().class_id
     }
     response = requests.post(
-      CONFIGRATIONS.get_backend_endpoint() + "attendance/insert",
+      CONFIGRATIONS.get_backend_endpoint() + "/attendance/insert",
       data = data
     ).content
     response = json.loads(response.decode('utf-8'))
