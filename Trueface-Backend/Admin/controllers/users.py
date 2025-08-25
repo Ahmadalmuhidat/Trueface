@@ -27,8 +27,10 @@ def InsertUser(request):
         %s
       )
     '''
-
-    mailer.SendGeneratedPasswordMail(generated_password,  [request.POST.get("email")])
+    mailer.SendGeneratedPasswordMail(
+      generated_password,
+      [request.POST.get("email")]
+    )
 
     return JsonResponse({
       "status_code": 200,

@@ -21,13 +21,15 @@ class Configrations:
     self.__class__._initialized = True
 
     # private
-    self._base_url = "http://34.29.161.87:8000/admin"
+    # self._backend_server_ip = "34.29.161.87"
+    self._backend_server_ip = "localhost"
+    self._backend_port = 8000
+    self._backend_entry_route = "admin"
 
     # threading
     self.executor = ThreadPoolExecutor(max_workers=4)
     self.shutdown_event = threading.Event()
     self.pause_event = threading.Event()
-
     self.pause_event.set()
 
   @classmethod
@@ -56,5 +58,5 @@ class Configrations:
   def get_token(cls):
     return cls.token
 
-  def get_base_url(self):
-    return self._base_url
+  def get_backend_endpoint(self):
+    return f"http://{self._backend_server_ip}:{self._backend_port}/{self._backend_entry_route}"

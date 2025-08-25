@@ -2,23 +2,32 @@ import sys
 import os
 import customtkinter
 
-from main import Main
 from app.controllers.auth import login
 from app.config.context import Context
+from app.config.configrations import Configrations
 
 class Login():
-  def login(self):
+  def __init__(self):
+    self._config = Configrations()
+    self._context = Context()
+    
+  def _login(self):
+    from main import Main
+
+    self._config.loading_cursor_on()
+
     result = login(
       self.email_entry.get(),
       self.password_entry.get()
     )
-    data_manager = Context()
     if result:
-      data_manager.get_config().set_token(result)
+      self._config.set_token(result)
+      self._config.loading_cursor_on()
+
       self.window.destroy()
       Main().start_program()
 
-  def lunch_view(self):
+  def launch_view(self):
     try:
       self.window = customtkinter.CTk()
       self.window.geometry("400x170")
@@ -81,7 +90,7 @@ class Login():
       save_button = customtkinter.CTkButton(
         content_frame,
         text="Login",
-        command=self.login
+        command=self._login
       )
       save_button.grid(
         row=6,

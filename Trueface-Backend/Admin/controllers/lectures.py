@@ -65,7 +65,6 @@ def RemoveLecture(request):
 def AddStudentToLecture(request):
   if request.method == "POST":
     try:
-      print(request.POST.get('relation_id'))
       data = (
         request.POST.get('relation_id'),
         request.POST.get('student_id'),
@@ -212,14 +211,20 @@ def GetStudentLectures(request):
 def RemoveStudentFromLecture(request):
   if request.method == "POST":
     try:
-      relation_id = request.POST.get('relation_id')
-      print(relation_id)
-      data = [relation_id]
+      student_id = request.POST.get('student_id')
+      lecture_id = request.POST.get('lecture_id')
+      day = request.POST.get('day')
+
+      data = [student_id, lecture_id, day]
       query = '''
         DELETE FROM
           ClassStudentRelation
         WHERE
-          ID = %s
+          Student = %s
+        AND
+          Class = %s
+        AND
+          Day = %s
       '''
       Database.ExecutePostQuery(query, data)
       return JsonResponse({"status_code": 200, "data": True})
