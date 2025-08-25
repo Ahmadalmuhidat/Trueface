@@ -1,9 +1,8 @@
-import os
-import sys
 import customtkinter
 
 from app.config.configrations import Configrations
 from app.helper.logger import Logger
+from app.helper.error_handler import error_handler
 
 class Router:
   _instance = None
@@ -24,13 +23,15 @@ class Router:
     self._config = Configrations()
     self._logger = Logger()
 
+  @error_handler
   def clear_window(self):
     if self._current_view:
       self._current_view.pack_forget()
   
   def get_current_view(self):
     return self._current_view
-  
+
+  @error_handler
   def navigate(self, view_class):
     try:
       self.clear_window()

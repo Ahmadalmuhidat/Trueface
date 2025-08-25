@@ -5,6 +5,7 @@ from app.config.context import Context
 from app.core.face_recognition_module import FaceRecognitionModule
 from app.config.configrations import Configrations
 from app.helper.alerts_manager import AlertsManager
+from app.helper.error_handler import error_handler
 
 class CameraManager:
   _instance = None
@@ -48,6 +49,7 @@ class CameraManager:
     self.camera_scanner.scan_connected_cameras()
     return self.camera_scanner.get_available_cameras()
 
+  @error_handler
   def view_current_camera_stream(self):
     if not self.camera_scanner.found_active_connected_camera:
       self._alert.pop_window(
@@ -67,6 +69,7 @@ class CameraManager:
 
     self.camera_viewer.view_camera(self._current_camera_index, self.camera_scanner._available_cameras)
 
+  @error_handler
   def start_capturing(self):
     if self.get_capturing_is_active():
       self._alert.pop_window(
@@ -88,6 +91,7 @@ class CameraManager:
     self._config.shutdown_event.clear()
     self.frame_processor.start(self.get_current_camera())
 
+  @error_handler
   def stop_capturing(self):
     if not self.get_capturing_is_active():
       self._alert.pop_window(

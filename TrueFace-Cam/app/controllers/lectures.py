@@ -5,12 +5,14 @@ from app.config.context import Context
 from app.config.configrations import Configrations
 from app.helper.logger import Logger
 from app.helper.alerts_manager import AlertsManager
+from app.helper.error_handler import error_handler
 
 LOGGER = Logger()
 ALERTS_MANAGR = AlertsManager()
 CONTEXT = Context()
 CONFIGRATIONS = Configrations()
 
+@error_handler
 def get_lectures_by_teacher():
   try:
     data = {

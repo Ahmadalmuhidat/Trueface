@@ -1,6 +1,7 @@
 from app.config.configrations import Configrations
 from app.interfaces.student import Student
 from app.interfaces.lecture import Lecture
+from app.helper.error_handler import error_handler
 
 class Context:
   _instance = None
@@ -28,6 +29,7 @@ class Context:
   def get_students(self):
     return self._current_lecture.get_students()
 
+  @error_handler
   def set_students(self, students):
     for data in students:
       student = Student(
@@ -43,7 +45,8 @@ class Context:
 
   def get_lectures(self):
     return self._lectures
-  
+
+  @error_handler
   def set_lectures(self, lectures):
     self._lectures = [
       Lecture(

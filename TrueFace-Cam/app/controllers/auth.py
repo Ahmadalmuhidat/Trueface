@@ -3,10 +3,12 @@ import json
 
 from app.helper.logger import Logger
 from app.helper.alerts_manager import AlertsManager
+from app.helper.error_handler import error_handler
 
 LOGGER = Logger()
 ALERTS_MANAGR = AlertsManager()
 
+@error_handler
 def login(email, password):
   try:
     data = {

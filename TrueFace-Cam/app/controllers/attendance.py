@@ -5,6 +5,7 @@ from app.config.context import Context
 from app.config.configrations import Configrations
 from app.helper.logger import Logger
 from app.helper.alerts_manager import AlertsManager
+from app.helper.error_handler import error_handler
 
 LOGGER = Logger()
 ALERTS_MANAGR = AlertsManager()
@@ -19,6 +20,7 @@ def search_attendance(student_id):
     LOGGER.log_exception(e)
     pass
 
+@error_handler
 def insert_attendance(student_id, student_name):
   try:
     data = {
