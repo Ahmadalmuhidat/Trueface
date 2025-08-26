@@ -12,14 +12,6 @@ ALERTS_MANAGR = AlertsManager()
 CONTEXT = Context()
 CONFIGRATIONS = Configrations()
 
-def search_attendance(student_id):
-  try:
-    return []
-
-  except Exception as e:
-    LOGGER.log_exception(e)
-    pass
-
 @error_handler
 def insert_attendance(student_id, student_name):
   try:
