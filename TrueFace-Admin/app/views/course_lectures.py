@@ -1,5 +1,3 @@
-import sys
-import os
 import customtkinter
 
 from app.interfaces.lecture import Lecture
@@ -7,10 +5,15 @@ from app.config.context import Context
 from app.config.configrations import Configrations
 from app.interfaces.lecture import Lecture
 from app.controllers.lectures import add_lecture, remove_lecture
+from app.helper.error_handler import error_handler
 
 class Lectures():
   def __init__(self):
-    self.lectures = []
+    self._context = Context()
+    self._config = Configrations()
+
+    self.lectures = self._context.get_current_course().get_lectures()
+    self.lectures_rows = []
     self.headers = [
       "Classe ID",
       "Subject",
@@ -25,9 +28,8 @@ class Lectures():
       "Instructor ID",	
       "Instructor Type"
     ]
-    self._context = Context()
-    self._config = Configrations()
 
+  @error_handler
   def _delete(self, lecture_id):
     self._config.loading_cursor_on()
     remove_lecture(lecture_id)
@@ -37,6 +39,7 @@ class Lectures():
     # self._context.get_current_course().remove_lecture(lecture_id)
     # self._display_lectures_table()
 
+  @error_handler
   def _add_row(self, lecture: Lecture, row):
     class_row = [
       lecture.lecture_id,
@@ -61,7 +64,7 @@ class Lectures():
         pady=5
       )
       class_data.grid(row=row, column=col, sticky="nsew")
-      self.lectures.append(class_data)
+      self.lectures_rows.append(class_data)
 
     delete_button = customtkinter.CTkButton(
       self.lectures_table_frame,
@@ -76,33 +79,32 @@ class Lectures():
       padx=10,
       pady=5
     )
-    self.lectures.append(delete_button)
+    self.lectures_rows.append(delete_button)
 
+  @error_handler
   def _clear_lectures_table(self):
-    for widget in self.lectures:
+    for widget in self.lectures_rows:
       widget.destroy()
-    self.lectures.clear()
+    self.lectures_rows.clear()
 
+  @error_handler
   def _display_lectures_table(self):
     self._config.loading_cursor_on()
     self._clear_lectures_table()
 
-    course = self._context.get_current_course()
-
-    if course:
-      for row, lecture in enumerate(course.get_lectures(), start=1):
-        self._add_row(lecture, row)
+    for row, lecture in enumerate(self.lectures, start=1):
+      self._add_row(lecture, row)
 
     self.lectures_count.configure(
-      text="Results: " + str(len(course.get_lectures()))
+      text="Results: " + str(len(self.lectures))
     )
-
     self._config.loading_cursor_off()
 
   def _refresh_lectures_table(self):
-    # self._context.get_current_course().fetch_lectures()
+    self._context.get_current_course().fetch_lectures()
     self._display_lectures_table()
 
+  @error_handler
   def _submit_new_class(self):
     self._config.loading_cursor_on()
 
@@ -118,7 +120,7 @@ class Lectures():
       self.section_entry.get(),
       self.component_entry.get(),
       self.campus_entry.get(),
-      self.instructor_id_entry.get()
+      next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
     )
     add_lecture(new_lecture)
 
@@ -134,16 +136,17 @@ class Lectures():
     self.component_entry.delete(0, customtkinter.END)
     self.campus_entry.delete(0, customtkinter.END)
     self.instructor_id_entry.delete(0, customtkinter.END)
-    self.instructor_type_entry.delete(0, customtkinter.END)
 
-    self._add_row(new_lecture, len(self._context.get_current_course().get_lectures()) + 1)
+    self._add_row(new_lecture, len(self.lectures) + 1)
     self._context.get_current_course().add_lecture(new_lecture)
-    self.lectures_count.configure(text="Results: " + str(len(self._context.get_current_course().get_lectures())))
+    self.lectures_count.configure(text="Results: " + str(len(self.lectures)))
     self._config.loading_cursor_off()
 
   def _search(self, term: str) -> None:
+    self.lectures = self._context.get_current_course().search_leacture(term)
     self._display_lectures_table()
 
+  @error_handler
   def _add_class_pop_window(self):
     self.course_id_title_map = {course.title: course.course_id for course in self._context.get_courses()}
 
@@ -384,9 +387,10 @@ class Lectures():
       pady=5
     )
 
-    self.instructor_id_entry = customtkinter.CTkEntry(
+    self.instructor_id_entry = customtkinter.CTkComboBox(
       self.pop_window,
-      width=350
+      width=350,
+      values=[user.name for user in self._context.get_users()]
     )
     self.instructor_id_entry.grid(
       row=11,
@@ -405,10 +409,15 @@ class Lectures():
       padx=10,
       pady=5
     )
-
-    self.instructor_type_entry = customtkinter.CTkEntry(
+    self.instructor_type_entry = customtkinter.CTkComboBox(
       self.pop_window,
-      width=350
+      width=350,
+      values=[
+        "Lecturer",
+        "Lab Instructor",
+        "Teaching Assistant",
+        "Course Coordinator"
+      ]
     )
     self.instructor_type_entry.grid(
       row=12,
@@ -430,6 +439,7 @@ class Lectures():
       pady=5
     )
 
+  @error_handler
   def launch_view(self, parent: customtkinter.CTkFrame):
     search_bar_frame = customtkinter.CTkFrame(
       parent,

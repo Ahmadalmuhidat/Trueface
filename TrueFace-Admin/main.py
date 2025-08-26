@@ -11,6 +11,7 @@ from app.views.login import Login
 from app.controllers.courses import get_courses
 from app.controllers.students import get_students
 from app.controllers.users import get_users
+from app.helper.error_handler import error_handler
 
 customtkinter.set_appearance_mode("dark")
 
@@ -23,6 +24,7 @@ class Main():
     get_students()
     get_users()
 
+  @error_handler
   def create_navbar(self):
     navbar = customtkinter.CTkFrame(self._config.window)
     navbar.pack(fill=customtkinter.X)
@@ -51,6 +53,7 @@ class Main():
     )
     users_view.pack(side=customtkinter.LEFT)
 
+  @error_handler
   def when_app_close(self):
     self._config.window.destroy()
     self._config.shutdown_event.set()
@@ -59,18 +62,18 @@ class Main():
 
     sys.exit(0)
 
+  @error_handler
   def start_program(self):
     try:
       self.window = customtkinter.CTk()
-
       self._config.set_window(self.window)
 
       width = self.window.winfo_screenwidth()
       height = self.window.winfo_screenheight()
+
       self.window.geometry("%dx%d" % (width, height))
       self.window.title("TrueFace Admin")
       # self.window.iconbitmap("logo.ico")
-
       self.window.protocol("WM_DELETE_WINDOW", self.when_app_close)
 
       self.create_navbar()
@@ -82,6 +85,5 @@ class Main():
       pass
 
 if __name__ == "__main__":
-
   Main().start_program()
   # Login.Login().launch_view()

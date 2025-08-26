@@ -2,7 +2,7 @@ from typing import List
 from app.interfaces.student import Student
 
 class Lecture:
-  def __init__(self, class_id = None, subject_area = None, start_time = None, end_time = None):
+  def __init__(self, class_id: str = None, subject_area: str = None, start_time: str = None, end_time: str = None):
     # private
     self._students = []
 

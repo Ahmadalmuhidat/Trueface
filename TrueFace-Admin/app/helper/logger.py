@@ -10,13 +10,11 @@ class Logger:
     self.logger.setLevel(level)
     self.logger.propagate = False
 
-    # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(level)
     console_format = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
     console_handler.setFormatter(console_format)
 
-    # File handler with rotation
     os.makedirs(os.path.dirname(log_file), exist_ok=True) if os.path.dirname(log_file) else None
     file_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
     file_handler.setLevel(level)
@@ -27,9 +25,6 @@ class Logger:
     self.logger.addHandler(file_handler)
 
   def log_exception(self, exc: Exception):
-    """
-    Logs an exception with detailed traceback info.
-    """
     exc_type, exc_obj, exc_tb = sys.exc_info()
     filename = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     lineno = exc_tb.tb_lineno

@@ -2,11 +2,12 @@ import threading
 
 from app.interfaces.lecture import Lecture
 from typing import List
+from app.helper.error_handler import error_handler
 
 class Course:
   def __init__(
-    self, course_id, title, credit, maximum_units, long_course_title, offering_nbr,
-    academic_group, subject_area, catalog_nbr, campus, academic_organization, component
+    self, course_id: str, title: str, credit: str, maximum_units: str, long_course_title: str, offering_nbr: str,
+    academic_group: str, subject_area: str, catalog_nbr: str, campus: str, academic_organization: str, component: str
   ):
     self.course_id = course_id
     self.title = title
@@ -25,6 +26,7 @@ class Course:
   
     threading.Thread(target=self.fetch_lectures).start()
 
+  @error_handler
   def fetch_lectures(self):
     from app.controllers.courses import get_lectures_by_course
 
@@ -47,6 +49,11 @@ class Course:
         data['InstructorType']
       )
       self.add_lecture(lecture_object)
+  
+  def search_leacture(self, term: str):
+    for lecture in self._lectures:
+      if term == lecture.lecture_id or term in lecture.subject_area:
+        return lecture
 
   def get_lectures(self) -> List[Lecture]:
     return self._lectures

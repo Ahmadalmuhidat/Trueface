@@ -8,10 +8,16 @@ from app.interfaces.student import Student
 from app.config.router import Router
 from app.views.student_profile import StudentProfile
 from app.controllers.students import add_student, remove_student
+from app.helper.error_handler import error_handler
 
 class Students:
   def __init__(self):
-    self.students = []
+    self._context = Context()
+    self._config = Configrations()
+    self._router = Router()
+
+    self.students = self._context.get_students()
+    self.students_rows = []
     self.headers = [
       "Student ID",
       "First Name",
@@ -20,21 +26,21 @@ class Students:
       "Gender",
       "Create Date"
     ]
-    self._context = Context()
-    self._config = Configrations()
-    self._router = Router()
 
+  @error_handler
   def _clear_students_table(self):
-    for widget in self.students:
+    for widget in self.students_rows:
       widget.destroy()
-    self.students.clear()
+    self.students_rows.clear()
 
+  @error_handler
   def _delete(self, student: Student):
     self._config.loading_cursor_on()
     remove_student(student)
     self._config.loading_cursor_on()
     self._refresh_students_table()
 
+  @error_handler
   def _add_student_row(self, row, student: Student):
     student_data = [
       student.student_id,
@@ -53,7 +59,7 @@ class Students:
         pady=5
       )
       label.grid(row=row, column=col, sticky="nsew")
-      self.students.append(label)
+      self.students_rows.append(label)
 
     profile_button = customtkinter.CTkButton(
       self.students_table_frame,
@@ -61,7 +67,7 @@ class Students:
       command=lambda student=student: self._show_stduent_profile_view(student)
     )
     profile_button.grid(row=row, column=6, padx=10, pady=5, sticky="nsew")
-    self.students.append(profile_button)
+    self.students_rows.append(profile_button)
 
     delete_button = customtkinter.CTkButton(
       self.students_table_frame,
@@ -70,40 +76,43 @@ class Students:
       command=lambda: self._config.executor.submit(self._delete, student)
     )
     delete_button.grid(row=row, column=7, padx=10, pady=5, sticky="nsew")
-    self.students.append(delete_button)
+    self.students_rows.append(delete_button)
 
+  @error_handler
   def _display_students_table(self):
     self._config.loading_cursor_on()
     self._clear_students_table()
 
-    students = self._context.get_students()
-    if students:
-      for row, student in enumerate(students, start=1):
-        self._add_student_row(row, student)
+    for row, student in enumerate(self.students, start=1):
+      self._add_student_row(row, student)
 
-    self._update_students_count(len(students))
+    self._update_students_count(len(self.students))
     self._config.loading_cursor_off()
 
   def _update_students_count(self, count):
     self.students_count.configure(text=f"Results: {count}")
 
+  @error_handler
   def _add_new_student_to_table(self, student: Student):
-    students = self._context.get_students()
+    students = self.students
     students.append(student)  # Add to context/source
     next_row = len(students)  # rows start at 1
     self._add_student_row(next_row, student)
     self._update_students_count(len(students))
 
+  @error_handler
   def _show_stduent_profile_view(self, student: Student):
     self._context.set_current_student(student)
     self._router.navigate(StudentProfile)
 
   def _search(self, term):
+    self.students = (filter(term, [student.student_id for student in self.students]))
     self._display_students_table()
 
   def _refresh_students_table(self):
     self._display_students_table()
 
+  @error_handler
   def _select_image(self):
     file_path = tkinter.filedialog.askopenfilename()
     if file_path:
@@ -113,6 +122,7 @@ class Students:
       self.student_image_entry.delete(0, customtkinter.END)
       self.student_image_entry.insert(0, file_path)
 
+  @error_handler
   def _submit(self):
     self._config.loading_cursor_on()
 
@@ -140,6 +150,7 @@ class Students:
     self._context.add_student(new_student)
     self._config.loading_cursor_off()
 
+  @error_handler
   def _add_student_pop_window(self):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
@@ -217,6 +228,7 @@ class Students:
       pady=15
     )
 
+  @error_handler
   def launch_view(self, parent: customtkinter.CTkFrame):
     search_bar_frame = customtkinter.CTkFrame(parent, bg_color="transparent")
     search_bar_frame.pack(fill="x", expand=False)

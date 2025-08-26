@@ -1,5 +1,3 @@
-import sys
-import os
 import base64
 import face_recognition
 import pickle
@@ -7,9 +5,10 @@ import threading
 
 from app.interfaces.lecture import Lecture
 from typing import List
+from app.helper.error_handler import error_handler
 
 class Student:
-  def __init__(self, student_id, first_name, middle_name, last_name, gender, create_date = None, picture = None):
+  def __init__(self, student_id: str, first_name: str, middle_name: str, last_name: str, gender: str, create_date: str = None, picture: str = None):
     self.student_id = student_id
     self.first_name = first_name
     self.middle_name = middle_name
@@ -22,6 +21,7 @@ class Student:
 
     threading.Thread(target=self.fetch_lectures).start()
 
+  @error_handler
   def fetch_lectures(self):
     from app.controllers.students import get_lectures_by_student
     
@@ -43,35 +43,27 @@ class Student:
 
   def add_lecture(self, lecture: Lecture):
     self._lectures.append(lecture)
-  
+
+  def search_leacture(self, term: str):
+    for lecture in self._lectures:
+      if term == lecture.lecture_id or term in lecture.subject_area:
+        return lecture
+
+  @error_handler
   def remove_lecture(self, lecture_id):
     self._lectures = [lecture for lecture in self._lectures if lecture.lecture_id != lecture_id]
-  
+
+  @error_handler
   def get_face_encode(self):
-    try:
-      load_stored_image = face_recognition.load_image_file(self.picture)
-      return base64.b64encode(pickle.dumps(face_recognition.face_encodings(load_stored_image)[0])).decode('utf-8')
+    load_stored_image = face_recognition.load_image_file(self.picture)
+    return base64.b64encode(pickle.dumps(face_recognition.face_encodings(load_stored_image)[0])).decode('utf-8')
 
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      FileName = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, FileName, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
-      pass
-
+  @error_handler
   def check_face_in_image(self):
-    try:
-      load_stored_image = face_recognition.load_image_file(self.picture)
-      face_found = face_recognition.face_locations(load_stored_image)
+    load_stored_image = face_recognition.load_image_file(self.picture)
+    face_found = face_recognition.face_locations(load_stored_image)
 
-      if face_found:
-        return True
-      else:
-        return False
-
-    except Exception as e:
-      ExceptionType, ExceptionObject, ExceptionTraceBack = sys.exc_info()
-      FileName = os.path.split(ExceptionTraceBack.tb_frame.f_code.co_filename)[1]
-      print(ExceptionType, FileName, ExceptionTraceBack.tb_lineno)
-      print(ExceptionObject)
-      pass
+    if face_found:
+      return True
+    else:
+      return False

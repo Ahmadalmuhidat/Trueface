@@ -4,7 +4,7 @@ import base64
 from datetime import datetime
 
 class Student:
-  def __init__(self, student_id, first_name, middle_name, last_name, geneder, face_encode, Time = None):
+  def __init__(self, student_id: str, first_name: str, middle_name: str, last_name: str, geneder: str, face_encode: str, Time: str = None):
     # private
     self._face_encode = pickle.loads(base64.b64decode(face_encode)) if face_encode else None
 

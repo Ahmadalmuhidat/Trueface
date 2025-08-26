@@ -3,7 +3,7 @@ import cv2
 from app.helper.error_handler import error_handler
 
 class Camera:
-  def __init__(self, index, name):
+  def __init__(self, index: int, name: str):
     self._name = name
     self._index = index
   
