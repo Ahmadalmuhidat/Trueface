@@ -17,6 +17,10 @@ class Home():
     self._context = Context()
     self._config = Configrations()
 
+  # --------------------
+  # operations
+  # --------------------
+
   @error_handler
   def _update_camera_status(self):
     if self._camera_manager.camera_scanner.found_active_connected_camera:
@@ -66,6 +70,10 @@ class Home():
       text = f"Attendance \n\n{sum(1 for student in self._context.get_students() if student.is_attended)}"
     )
     self.window.after(5000, self._update_attendance_count)
+
+  # --------------------
+  # view entry
+  # --------------------
 
   @error_handler
   def launch_view(self, parent):

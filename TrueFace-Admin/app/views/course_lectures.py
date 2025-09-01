@@ -6,6 +6,7 @@ from app.config.configrations import Configrations
 from app.interfaces.lecture import Lecture
 from app.controllers.lectures import add_lecture, remove_lecture
 from app.helper.error_handler import error_handler
+from app.helper.time import convert_to_24h
 
 class Lectures():
   def __init__(self):
@@ -29,79 +30,21 @@ class Lectures():
       "Instructor Type"
     ]
 
+  # --------------------
+  # operations
+  # --------------------
+
+  def _search_lecture(self, term: str) -> None:
+    self.lectures = self._context.get_current_course().search_leacture(term)
+    self._display_lectures_table()
+
   @error_handler
-  def _delete(self, lecture_id):
+  def _delete_lecture(self, lecture_id):
     self._config.loading_cursor_on()
     remove_lecture(lecture_id)
     self._context.get_current_course().remove_lecture(lecture_id)
+    self.lectures = self._context.get_current_course().get_lectures()
     self._config.loading_cursor_off()
-    self._refresh_lectures_table()
-    # self._context.get_current_course().remove_lecture(lecture_id)
-    # self._display_lectures_table()
-
-  @error_handler
-  def _add_row(self, lecture: Lecture, row):
-    class_row = [
-      lecture.lecture_id,
-      lecture.subject_area,
-      lecture.catalog_nbr,
-      lecture.academic_career,
-      lecture.offering_nbr,
-      lecture.start_time,
-      lecture.end_time,
-      lecture.section,
-      lecture.component,
-      lecture.campus,
-      lecture.instructor_id,
-      lecture.instructor_type
-    ]
-
-    for col, data in enumerate(class_row):
-      class_data = customtkinter.CTkLabel(
-        self.lectures_table_frame,
-        text=data,
-        padx=10,
-        pady=5
-      )
-      class_data.grid(row=row, column=col, sticky="nsew")
-      self.lectures_rows.append(class_data)
-
-    delete_button = customtkinter.CTkButton(
-      self.lectures_table_frame,
-      text="Delete",
-      fg_color="red",
-      command=lambda: self._config.executor.submit(self._delete, lecture)
-    )
-    delete_button.grid(
-      row=row,
-      column=len(class_row),
-      sticky="nsew",
-      padx=10,
-      pady=5
-    )
-    self.lectures_rows.append(delete_button)
-
-  @error_handler
-  def _clear_lectures_table(self):
-    for widget in self.lectures_rows:
-      widget.destroy()
-    self.lectures_rows.clear()
-
-  @error_handler
-  def _display_lectures_table(self):
-    self._config.loading_cursor_on()
-    self._clear_lectures_table()
-
-    for row, lecture in enumerate(self.lectures, start=1):
-      self._add_row(lecture, row)
-
-    self.lectures_count.configure(
-      text="Results: " + str(len(self.lectures))
-    )
-    self._config.loading_cursor_off()
-
-  def _refresh_lectures_table(self):
-    self._context.get_current_course().fetch_lectures()
     self._display_lectures_table()
 
   @error_handler
@@ -115,12 +58,13 @@ class Lectures():
       self.academic_career_entry.get(),
       self._context.get_current_course().course_id,
       self.offering_nbr_entry.get(),
-      self.start_time_entry.get(),
-      self.end_time_entry.get(),
+      convert_to_24h(self.start_hour_var.get(), self.start_minute_var.get(), self.start_ampm_var.get()),
+      convert_to_24h(self.end_hour_var.get(), self.end_minute_var.get(), self.end_ampm_var.get()),
       self.section_entry.get(),
       self.component_entry.get(),
       self.campus_entry.get(),
-      next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
+      next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None),
+      self.instructor_type_entry.get()
     )
     add_lecture(new_lecture)
 
@@ -130,24 +74,26 @@ class Lectures():
     self.catalog_nbr_entry.delete(0, customtkinter.END)
     self.academic_career_entry.delete(0, customtkinter.END)
     self.offering_nbr_entry.delete(0, customtkinter.END)
-    self.start_time_entry.delete(0, customtkinter.END)
-    self.end_time_entry.delete(0, customtkinter.END)
     self.section_entry.delete(0, customtkinter.END)
     self.component_entry.delete(0, customtkinter.END)
     self.campus_entry.delete(0, customtkinter.END)
-    self.instructor_id_entry.delete(0, customtkinter.END)
 
     self._add_row(new_lecture, len(self.lectures) + 1)
     self._context.get_current_course().add_lecture(new_lecture)
+    self.lectures.append(new_lecture)
     self.lectures_count.configure(text="Results: " + str(len(self.lectures)))
     self._config.loading_cursor_off()
 
-  def _search(self, term: str) -> None:
-    self.lectures = self._context.get_current_course().search_leacture(term)
+  def _refresh_lectures_table(self):
+    self._context.get_current_course().fetch_lectures()
     self._display_lectures_table()
 
+  # --------------------
+  # forms
+  # --------------------
+
   @error_handler
-  def _add_class_pop_window(self):
+  def _add_class_form(self):
     self.course_id_title_map = {course.title: course.course_id for course in self._context.get_courses()}
 
     self.pop_window = customtkinter.CTkToplevel()
@@ -277,16 +223,36 @@ class Lectures():
       pady=5
     )
 
-    self.start_time_entry = customtkinter.CTkEntry(
+    hours = [f"{h:02}" for h in range(1, 13)]   # 01–12
+    minutes = [f"{m:02}" for m in range(0, 60)] # 00–59
+
+    self.start_hour_var = customtkinter.StringVar(value="08")
+    self.start_minute_var = customtkinter.StringVar(value="00")
+    self.start_ampm_var = customtkinter.StringVar(value="AM")
+
+    self.start_hour_menu = customtkinter.CTkOptionMenu(
       self.pop_window,
-      width=350
+      values=hours,
+      variable=self.start_hour_var,
+      width=80
     )
-    self.start_time_entry.grid(
-      row=6,
-      column=1,
-      padx=10,
-      pady=5
+    self.start_hour_menu.grid(row=6, column=1, padx=(10,0), pady=5, sticky="w")
+
+    self.start_minute_menu = customtkinter.CTkOptionMenu(
+      self.pop_window,
+      values=minutes,
+      variable=self.start_minute_var,
+      width=80
     )
+    self.start_minute_menu.grid(row=6, column=1, padx=(100,0), pady=5, sticky="w")
+
+    self.start_ampm_menu = customtkinter.CTkOptionMenu(
+      self.pop_window,
+      values=["AM", "PM"],
+      variable=self.start_ampm_var,
+      width=80
+    )
+    self.start_ampm_menu.grid(row=6, column=1, padx=(190,0), pady=5, sticky="w")
 
     end_time_label = customtkinter.CTkLabel(
       self.pop_window,
@@ -299,16 +265,33 @@ class Lectures():
       pady=5
     )
 
-    self.end_time_entry = customtkinter.CTkEntry(
+    self.end_hour_var = customtkinter.StringVar(value="09")
+    self.end_minute_var = customtkinter.StringVar(value="00")
+    self.end_ampm_var = customtkinter.StringVar(value="AM")
+
+    self.end_hour_menu = customtkinter.CTkOptionMenu(
       self.pop_window,
-      width=350
+      values=hours,
+      variable=self.end_hour_var,
+      width=80
     )
-    self.end_time_entry.grid(
-      row=7,
-      column=1,
-      padx=10,
-      pady=5
+    self.end_hour_menu.grid(row=7, column=1, padx=(10,0), pady=5, sticky="w")
+
+    self.end_minute_menu = customtkinter.CTkOptionMenu(
+      self.pop_window,
+      values=minutes,
+      variable=self.end_minute_var,
+      width=80
     )
+    self.end_minute_menu.grid(row=7, column=1, padx=(100,0), pady=5, sticky="w")
+
+    self.end_ampm_menu = customtkinter.CTkOptionMenu(
+      self.pop_window,
+      values=["AM", "PM"],
+      variable=self.end_ampm_var,
+      width=80
+    )
+    self.end_ampm_menu.grid(row=7, column=1, padx=(190,0), pady=5, sticky="w")
 
     section_label = customtkinter.CTkLabel(
       self.pop_window,
@@ -439,6 +422,75 @@ class Lectures():
       pady=5
     )
 
+  # --------------------
+  # table functions
+  # --------------------
+
+  @error_handler
+  def _add_row(self, lecture: Lecture, row):
+    class_row = [
+      lecture.lecture_id,
+      lecture.subject_area,
+      lecture.catalog_nbr,
+      lecture.academic_career,
+      lecture.offering_nbr,
+      lecture.start_time,
+      lecture.end_time,
+      lecture.section,
+      lecture.component,
+      lecture.campus,
+      lecture.instructor_id,
+      lecture.instructor_type
+    ]
+
+    for col, data in enumerate(class_row):
+      class_data = customtkinter.CTkLabel(
+        self.lectures_table_frame,
+        text=data,
+        padx=10,
+        pady=5
+      )
+      class_data.grid(row=row, column=col, sticky="nsew")
+      self.lectures_rows.append(class_data)
+
+    delete_button = customtkinter.CTkButton(
+      self.lectures_table_frame,
+      text="Delete",
+      fg_color="red",
+      command=lambda: self._config.executor.submit(self._delete_lecture, lecture)
+    )
+    delete_button.grid(
+      row=row,
+      column=len(class_row),
+      sticky="nsew",
+      padx=10,
+      pady=5
+    )
+    self.lectures_rows.append(delete_button)
+
+  @error_handler
+  def _clear_lectures_table(self):
+    for widget in self.lectures_rows:
+      widget.destroy()
+    self.lectures_rows.clear()
+
+  @error_handler
+  def _display_lectures_table(self):
+    self._config.loading_cursor_on()
+    self._clear_lectures_table()
+
+    for row, lecture in enumerate(self.lectures, start=1):
+      self._add_row(lecture, row)
+
+    self.lectures_count.configure(
+      text="Results: " + str(len(self.lectures))
+    )
+    self._config.loading_cursor_off()
+
+  # --------------------
+  # view entry
+  # --------------------
+
   @error_handler
   def launch_view(self, parent: customtkinter.CTkFrame):
     search_bar_frame = customtkinter.CTkFrame(
@@ -452,7 +504,7 @@ class Lectures():
 
     search_button = customtkinter.CTkButton(
       search_bar_frame,
-      command=lambda: self._search(search_bar.get()),
+      command=lambda: self._search_lecture(search_bar.get()),
       text="Search"
     )
     search_button.grid(
@@ -491,7 +543,7 @@ class Lectures():
 
     add_class_button = customtkinter.CTkButton(
       search_bar_frame,
-      command=self._add_class_pop_window,
+      command=self._add_class_form,
       width=100,
       text="Add Class"
     )

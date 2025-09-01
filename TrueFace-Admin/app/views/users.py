@@ -20,74 +20,24 @@ class Users():
       "Role",
     ]
 
+  # --------------------
+  # operations
+  # --------------------
+
   @error_handler
-  def _delete(self, user: User):
+  def _delete_user(self, user: User):
     self._config.loading_cursor_on()
     remove_user(user)
+    self.users = self._context.get_users()
     self._config.loading_cursor_off()
     self._refresh_users_table()
 
-  def _search(self, term):
-    self.users = (filter(term, [user.name for user in self.users]))
+  def _search_user(self, term):
+    self.users = list(filter(lambda user: term in user.name, self.users))
     self._display_users_table()
 
   @error_handler
-  def _add_row(self, user: User, row):
-    user_row = [
-      user.user_id,
-      user.name,
-      user.email,
-      user.role
-    ]
-
-    for col, data in enumerate(user_row):
-      user_data = customtkinter.CTkLabel(
-        self.users_table_frame,
-        text=data,
-        padx=10,
-        pady=5
-      )
-      user_data.grid(row=row, column=col, sticky="nsew")
-      self.users_rows.append(user_data)
-
-    delete_button = customtkinter.CTkButton(
-      self.users_table_frame,
-      text="Delete",
-      fg_color="red",
-      command=lambda: self._config.executor.submit(self._delete, user)
-    )
-    delete_button.grid(
-      row=row,
-      column=len(user_row),
-      sticky="nsew",
-      padx=10,
-      pady=5
-    )
-    self.users_rows.append(delete_button)
-
-  @error_handler
-  def _clear_users_table(self):
-    for widget in self.users_rows:
-      widget.destroy()
-    self.users_rows.clear()
-
-  @error_handler
-  def _display_users_table(self):
-    self._config.loading_cursor_on()
-    self._clear_users_table()
-
-    for row, user in enumerate(self.users, start=1):
-      self._add_row(user, row)
-
-    self.users_count.configure(text="Results: " + str(len(self.users)))
-    self._config.loading_cursor_off()
-
-  def _refresh_users_table(self):
-    get_users()
-    self._display_users_table()
-
-  @error_handler
-  def _submit(self):
+  def _submit_new_user(self):
     self._config.loading_cursor_on()
 
     new_user = User(
@@ -104,11 +54,20 @@ class Users():
 
     self._add_row(new_user, len(self.users) + 1)
     self._context.add_user(new_user)
+    self.users.append(new_user)
     self.users_count.configure(text="Results: " + str(len(self.users)))
     self._config.loading_cursor_off()
 
+  def _refresh_users_table(self):
+    get_users()
+    self._display_users_table()
+
+  # --------------------
+  # forms
+  # --------------------
+
   @error_handler
-  def _add_user_pop_window(self):
+  def _add_user_form(self):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
 
@@ -209,7 +168,7 @@ class Users():
     submit_button = customtkinter.CTkButton(
       self.pop_window,
       text="Save User",
-      command=self._submit,
+      command=self._submit_new_user,
       width=350
     )
     submit_button.grid(
@@ -219,6 +178,65 @@ class Users():
       padx=10,
       pady=15
     )
+
+  # --------------------
+  # table functions
+  # --------------------
+
+  @error_handler
+  def _add_row(self, user: User, row):
+    user_row = [
+      user.user_id,
+      user.name,
+      user.email,
+      user.role
+    ]
+
+    for col, data in enumerate(user_row):
+      user_data = customtkinter.CTkLabel(
+        self.users_table_frame,
+        text=data,
+        padx=10,
+        pady=5
+      )
+      user_data.grid(row=row, column=col, sticky="nsew")
+      self.users_rows.append(user_data)
+
+    delete_button = customtkinter.CTkButton(
+      self.users_table_frame,
+      text="Delete",
+      fg_color="red",
+      command=lambda: self._config.executor.submit(self._delete_user, user)
+    )
+    delete_button.grid(
+      row=row,
+      column=len(user_row),
+      sticky="nsew",
+      padx=10,
+      pady=5
+    )
+    self.users_rows.append(delete_button)
+
+  @error_handler
+  def _clear_users_table(self):
+    for widget in self.users_rows:
+      widget.destroy()
+    self.users_rows.clear()
+
+  @error_handler
+  def _display_users_table(self):
+    self._config.loading_cursor_on()
+    self._clear_users_table()
+
+    for row, user in enumerate(self.users, start=1):
+      self._add_row(user, row)
+
+    self.users_count.configure(text="Results: " + str(len(self.users)))
+    self._config.loading_cursor_off()
+
+  # --------------------
+  # view entry
+  # --------------------
 
   @error_handler
   def launch_view(self, parent: customtkinter.CTkFrame):
@@ -234,7 +252,7 @@ class Users():
     search_button = customtkinter.CTkButton(
       search_bar_frame,
       text="Search",
-      command=lambda: self._search(search_bar.get())
+      command=lambda: self._search_user(search_bar.get())
     )
     search_button.grid(
       row=0,
@@ -273,7 +291,7 @@ class Users():
     add_user_button = customtkinter.CTkButton(
       search_bar_frame,
       text="Add Users",
-      command=self._add_user_pop_window,
+      command=self._add_user_form,
       width=100
     )
     add_user_button.grid(

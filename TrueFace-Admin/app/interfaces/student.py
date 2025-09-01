@@ -8,7 +8,10 @@ from typing import List
 from app.helper.error_handler import error_handler
 
 class Student:
-  def __init__(self, student_id: str, first_name: str, middle_name: str, last_name: str, gender: str, create_date: str = None, picture: str = None):
+  def __init__(
+    self, student_id: str, first_name: str, middle_name: str,
+    last_name: str, gender: str, create_date: str = None, picture: str = None
+  ):
     self.student_id = student_id
     self.first_name = first_name
     self.middle_name = middle_name
@@ -26,9 +29,8 @@ class Student:
     from app.controllers.students import get_lectures_by_student
     
     self._lectures.clear()
-    lectures = get_lectures_by_student(self)
 
-    for lecture in lectures:
+    for lecture in get_lectures_by_student(self):
       lecture = Lecture(
         class_id=lecture["ID"],
         subject_area=lecture["SubjectArea"],
@@ -45,9 +47,7 @@ class Student:
     self._lectures.append(lecture)
 
   def search_leacture(self, term: str):
-    for lecture in self._lectures:
-      if term == lecture.lecture_id or term in lecture.subject_area:
-        return lecture
+    return [lecture for lecture in self._lectures if term == lecture.lecture_id or term in lecture.subject_area]
 
   @error_handler
   def remove_lecture(self, lecture_id):

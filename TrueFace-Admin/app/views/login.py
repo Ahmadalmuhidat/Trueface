@@ -10,6 +10,10 @@ class Login():
     self._config = Configrations()
     self._context = Context()
 
+  # --------------------
+  # operations
+  # --------------------
+
   @error_handler
   def _login(self):
     from main import Main
@@ -26,6 +30,10 @@ class Login():
 
       self.window.destroy()
       Main().start_program()
+
+  # --------------------
+  # view entry
+  # --------------------
 
   @error_handler
   def launch_view(self):

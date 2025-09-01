@@ -25,10 +25,22 @@ class Configrations:
     self._backend_entry_route = "teacher"
     self._processing_mode = "CPU"
 
+    from app.core.face_recognition_module import FaceRecognitionModule
+    from app.core.KD_Tree import KD_Tree_Module
+
+    # AI models
+    self.current_recognizer = "face_recognition"
+    self.face_recognition_module = FaceRecognitionModule()
+    self.KD_tree_module = KD_Tree_Module()
+
     # threading
     self.frame_processing_executor = ThreadPoolExecutor(max_workers=10)
     self.ui_threads_executor = ThreadPoolExecutor(max_workers=5)
     self.shutdown_event = threading.Event()
+  
+  def switch_model_to_KTD(self):
+    self.KD_tree_module._build_kd_tree()
+    self.current_recognizer = "KTD_Tree"
 
   @classmethod
   def loading_cursor_on(cls):

@@ -1,4 +1,3 @@
-from app.config.configrations import Configrations
 from app.interfaces.student import Student
 from app.interfaces.lecture import Lecture
 from app.helper.error_handler import error_handler
@@ -23,8 +22,6 @@ class Context:
 
     # auth
     self._token = None
-
-    self._config = Configrations()
 
   def get_students(self):
     return self._current_lecture.get_students()

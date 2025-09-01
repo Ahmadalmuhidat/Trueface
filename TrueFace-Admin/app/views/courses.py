@@ -33,90 +33,21 @@ class Courses():
       ""
     ]
 
-  @error_handler
-  def _show_lectures_view(self, course: Course):
-    self._context.set_current_course(course)
-    self._router.navigate(Lectures)
+  # --------------------
+  # operations
+  # --------------------
+
+  def _search_course(self, term):
+    self.courses = list(filter(lambda c: term in c.subject_area, self._context.get_courses()))
+    self._display_courses_table()
 
   @error_handler
-  def _delete(self, course: Course):
+  def _delete_course(self, course: Course):
     self._config.loading_cursor_on()
     remove_course(course)
+    self.courses = self._context.get_courses()
     self._config.loading_cursor_on()
-    self._refresh_courses_table()
-
-  @error_handler
-  def _add_row(self, course: Course, row):
-    course_row = [
-      course.course_id,
-      course.title,
-      course.credit,
-      course.maximum_units,
-      course.long_course_title,
-      course.offering_nbr,
-      course.academic_group,
-      course.subject_area,
-      course.catalog_nbr,
-      course.campus,
-      course.academic_organization,
-      course.component
-    ]
-
-    for col, data in enumerate(course_row):
-      course_data = customtkinter.CTkLabel(
-        self.courses_table_frame,
-        text=data,
-        padx=10,
-        pady=5
-      )
-      course_data.grid(row=row, column=col, sticky="nsew")
-      self.courses_rows.append(course_data)
-
-    lectures_button = customtkinter.CTkButton(
-      self.courses_table_frame,
-      text="Lectures",
-      command=lambda course=course: self._show_lectures_view(course)
-    )
-    lectures_button.grid(
-      row=row,
-      column=len(course_row),
-      sticky="nsew",
-      padx=10,
-      pady=5
-    )
-    self.courses_rows.append(lectures_button)
-
-    delete_button = customtkinter.CTkButton(
-      self.courses_table_frame,
-      text="Delete",
-      fg_color="red",
-      command=lambda: self._config.executor.submit(self._delete, course)
-    )
-    delete_button.grid(
-      row=row,
-      column=len(course_row)+1,
-      sticky="nsew",
-      padx=10,
-      pady=5
-    )
-    self.courses_rows.append(delete_button)
-
-  @error_handler
-  def _clear_courses_table(self):
-    for widget in self.courses_rows:
-      widget.destroy()
-    self.courses_rows.clear()
-
-  @error_handler
-  def _display_courses_table(self):
-    self._config.loading_cursor_on()
-    self._clear_courses_table()
-
-    for row, course in enumerate(self.courses, start=1):
-      self._add_row(course, row)
-
-    self.courses_count.configure(text="Results: " + str(len(self.courses)))
-    self._config.loading_cursor_off()
+    self._display_courses_table()
 
   def _refresh_courses_table(self):
     get_courses()
@@ -157,15 +88,21 @@ class Courses():
 
     self._add_row(new_course, len(self.courses) + 1)
     self._context.add_course(new_course)
+    self.courses.append(new_course)
     self.courses_count.configure(text="Results: " + str(len(self.courses)))
     self._config.loading_cursor_off()
 
-  def _search(self, term):
-    self.courses = (filter(term, [course.subject_area for course in self._context.get_courses()]))
-    self._display_courses_table()
+  @error_handler
+  def _navigate_to_course_lectures(self, course: Course):
+    self._context.set_current_course(course)
+    self._router.navigate(Lectures)
+
+  # --------------------
+  # forms
+  # --------------------
 
   @error_handler
-  def _add_course_pop_window(self):
+  def _add_course_form(self):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
 
@@ -450,6 +387,87 @@ class Courses():
       pady=5
     )
 
+  # --------------------
+  # table functions
+  # --------------------
+
+  @error_handler
+  def _add_row(self, course: Course, row):
+    course_row = [
+      course.course_id,
+      course.title,
+      course.credit,
+      course.maximum_units,
+      course.long_course_title,
+      course.offering_nbr,
+      course.academic_group,
+      course.subject_area,
+      course.catalog_nbr,
+      course.campus,
+      course.academic_organization,
+      course.component
+    ]
+
+    for col, data in enumerate(course_row):
+      course_data = customtkinter.CTkLabel(
+        self.courses_table_frame,
+        text=data,
+        padx=10,
+        pady=5
+      )
+      course_data.grid(row=row, column=col, sticky="nsew")
+      self.courses_rows.append(course_data)
+
+    lectures_button = customtkinter.CTkButton(
+      self.courses_table_frame,
+      text="Lectures",
+      command=lambda course=course: self._navigate_to_course_lectures(course)
+    )
+    lectures_button.grid(
+      row=row,
+      column=len(course_row),
+      sticky="nsew",
+      padx=10,
+      pady=5
+    )
+    self.courses_rows.append(lectures_button)
+
+    delete_button = customtkinter.CTkButton(
+      self.courses_table_frame,
+      text="Delete",
+      fg_color="red",
+      command=lambda: self._config.executor.submit(self._delete_course, course)
+    )
+    delete_button.grid(
+      row=row,
+      column=len(course_row)+1,
+      sticky="nsew",
+      padx=10,
+      pady=5
+    )
+    self.courses_rows.append(delete_button)
+
+  @error_handler
+  def _clear_courses_table(self):
+    for widget in self.courses_rows:
+      widget.destroy()
+    self.courses_rows.clear()
+
+  @error_handler
+  def _display_courses_table(self):
+    self._config.loading_cursor_on()
+    self._clear_courses_table()
+
+    for row, course in enumerate(self.courses, start=1):
+      self._add_row(course, row)
+
+    self.courses_count.configure(text="Results: " + str(len(self.courses)))
+    self._config.loading_cursor_off()
+
+  # --------------------
+  # view entry
+  # --------------------
+
   @error_handler
   def launch_view(self, parent: customtkinter.CTkFrame):
     search_bar_frame = customtkinter.CTkFrame(
@@ -463,7 +481,7 @@ class Courses():
 
     search_button = customtkinter.CTkButton(
       search_bar_frame,
-      command=lambda: self._search(search_bar.get()),
+      command=lambda: self._search_course(search_bar.get()),
       text="Search"
     )
     search_button.grid(
@@ -502,7 +520,7 @@ class Courses():
 
     add_course_button = customtkinter.CTkButton(
       search_bar_frame,
-      command=self._add_course_pop_window,
+      command=self._add_course_form,
       width=100,
       text="Add Course"
     )

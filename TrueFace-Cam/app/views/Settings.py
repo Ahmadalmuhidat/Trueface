@@ -1,5 +1,3 @@
-import os
-import sys
 import customtkinter
 import requests
 import json
@@ -27,6 +25,10 @@ class Settings():
     self._load_lectures()
     self._load_cameras()
 
+  # --------------------
+  # operations
+  # --------------------
+
   @error_handler
   def _load_lectures(self):
     get_lectures_by_teacher()
@@ -43,6 +45,27 @@ class Settings():
     }
 
   @error_handler
+  def _update_current_lecture(self):
+    self._config.loading_cursor_on()
+    try:
+      selected_id = self.class_id_title_map.get(self.current_lecture_entry.get())
+      ClassObject = next(
+        (lecture for lecture in self._context.get_lectures() if lecture.class_id == selected_id),
+        None
+      )
+      self._context.set_current_lecture(ClassObject)
+      get_students_by_lecture()
+
+    finally:
+      self._config.loading_cursor_off()
+
+    self._alert.pop_window(
+      "Info",
+      "Lecture has been updated",
+      "check"
+    )
+
+  @error_handler
   def _update_current_camera(self, user_camera_selection):
     self._camera_manager.set_current_camera(self.cameras_key_map.get(user_camera_selection))
     self._alert.pop_window(
@@ -51,6 +74,7 @@ class Settings():
       "check"
     )
 
+  @error_handler
   def _check_api_health(self):
     try:
       original = self._config.get_backend_endpoint()
@@ -103,25 +127,9 @@ class Settings():
       )
       self._config.set_backend_ip_address(original)
 
-  def _update_lecture(self):
-    self._config.loading_cursor_on()
-    try:
-      selected_id = self.class_id_title_map.get(self.current_lecture_entry.get())
-      ClassObject = next(
-        (lecture for lecture in self._context.get_lectures() if lecture.class_id == selected_id),
-        None
-      )
-      self._context.set_current_lecture(ClassObject)
-      get_students_by_lecture()
-
-    finally:
-      self._config.loading_cursor_off()
-
-    self._alert.pop_window(
-      "Info",
-      "Lecture has been updated",
-      "check"
-    )
+  # --------------------
+  # view entry
+  # --------------------
 
   @error_handler
   def launch_view(self, parent):
@@ -147,7 +155,7 @@ class Settings():
       content_frame,
       values=[f"{lecture.subject_area} {lecture.start_time}-{lecture.end_time}" for lecture in self._context.get_lectures()],
       width=300,
-      command=lambda _: self._config.frame_processing_executor.submit(self._update_lecture)
+      command=lambda _: self._config.frame_processing_executor.submit(self._update_current_lecture)
     )
     self.current_lecture_entry.grid(
       row=5,

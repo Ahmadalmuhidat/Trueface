@@ -6,10 +6,9 @@ from app.helper.logger import Logger
 LOGGER = Logger()
 
 def error_handler(func):
-  def wrapper(self, *args, **kwargs):
+  def wrapper(*args, **kwargs):
     try:
-      return func(self, *args, **kwargs)
-
+      return func(*args, **kwargs)
     except Exception as e:
       exc_type, exc_obj, exc_tb = sys.exc_info()
       fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -17,5 +16,4 @@ def error_handler(func):
       print(exc_obj)
       LOGGER.log_exception(e)
       pass
-
   return wrapper

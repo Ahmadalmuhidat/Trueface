@@ -3,6 +3,7 @@ import os
 import customtkinter
 
 from app.config.context import Context
+from app.interfaces.student import Student
 from app.config.configrations import Configrations
 from app.helper.alerts_manager import AlertsManager
 from app.helper.error_handler import error_handler
@@ -13,7 +14,7 @@ class Students():
     self._config = Configrations()
     self._alert = AlertsManager()
 
-    self.students = []
+    self.students_rows = []
     self.headers = [
       "Student ID",
       "First Name",
@@ -22,13 +23,35 @@ class Students():
       "Gender"
     ]
 
-  @error_handler
-  def _display_students_table(self):
-    for label in self.students:
-      label.destroy()
+  # --------------------
+  # operations
+  # --------------------
 
-    if len(self._context.get_students()) > 0:
-      for row, student in enumerate(self._context.get_students(), start=1):
+  @error_handler
+  def _refresh(self):
+    if not self._context.get_current_lecture():
+      self._alert.pop_window(
+        "Error",
+        "Please select a class from the settings",
+        "cancel"
+      )
+      return
+
+    self._config.frame_processing_executor.submit(self._display_students_table)
+
+  # --------------------
+  # table functions
+  # --------------------
+
+  @error_handler
+  def _clear_attendance_table(self):
+    for widget in self.students_rows:
+      widget.destroy()
+    self.students_rows.clear()
+
+  @error_handler
+  def _add_row(self, student: Student, row):
+     for row, student in enumerate(self._context.get_students(), start=1):
         student_row = [
           student.student_id,
           student.first_name,
@@ -49,7 +72,15 @@ class Students():
             column = col,
             sticky = "nsew"
           )
-          self.students.append(student_data)
+          self.students_rows.append(student_data)
+
+  @error_handler
+  def _display_students_table(self):
+    self._clear_attendance_table()
+
+    if len(self._context.get_students()) > 0:
+      for row, student in enumerate(self._context.get_students(), start=1):
+        self._add_row(student, row)
     else:
       self._alert.pop_window(
         "No Student Available",
@@ -57,17 +88,9 @@ class Students():
         "cancel"
       )
 
-  @error_handler
-  def _refresh(self):
-    if not self._context.get_current_lecture():
-      self._alert.pop_window(
-        "Error",
-        "Please select a class from the settings",
-        "cancel"
-      )
-      return
-
-    self._config.frame_processing_executor.submit(self._display_students_table)
+  # --------------------
+  # view entry
+  # --------------------
 
   @error_handler
   def launch_view(self, parent):

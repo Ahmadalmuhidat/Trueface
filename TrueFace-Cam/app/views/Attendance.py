@@ -1,16 +1,16 @@
-import sys
 import os
 import customtkinter
 import pandas
 
 from app.config.context import Context
+from app.interfaces.student import Student
 from app.config.configrations import Configrations
 from app.helper.alerts_manager import AlertsManager
 from app.helper.error_handler import error_handler
 
 class Attendance():
   def __init__(self):
-    self._attendance = []
+    self._attendance_rows = []
     self._headers = [
       "Student ID",
       "First Name",
@@ -22,6 +22,10 @@ class Attendance():
     self._context = Context()
     self._config = Configrations()
     self._alert = AlertsManager()
+
+  # --------------------
+  # operations
+  # --------------------
 
   @error_handler
   def _generate_report(self):
@@ -65,42 +69,6 @@ class Attendance():
     self._config.loading_cursor_off()
 
   @error_handler
-  def _display_attendance_table(self):
-    for label in self._attendance:
-      label.destroy()
-
-    if len(self._context.get_students()) > 0:
-      for row, student in enumerate(self._context.get_students(), start=1):
-        attendance_row = [
-          student.student_id,
-          student.first_name,
-          student.middle_name,
-          student.last_name,
-          student.is_attended(),
-          student.time
-        ]
-
-        for col, data in enumerate(attendance_row):
-          attendance_data = customtkinter.CTkLabel(
-            self.attendance_table_frame,
-            text = data,
-            padx = 10,
-            pady = 5   
-          )
-          attendance_data.grid(
-            row = row,
-            column = col,
-            sticky = "nsew"
-          )
-          self._attendance.append(attendance_data)
-    else:
-      self._alert.pop_window(
-        "No Student Available",
-        "Please select a lecture from the setting page",
-        "cancel"
-      )
-
-  @error_handler
   def _refresh(self):
     if not self._context.get_current_lecture():
       self._alert.pop_window(
@@ -117,6 +85,59 @@ class Attendance():
     self._config.loading_cursor_on()
     self._display_attendance_table()
     self._config.loading_cursor_off()
+
+  # --------------------
+  # table functions
+  # --------------------
+
+  @error_handler
+  def _clear_attendance_table(self):
+    for widget in self._attendance_rows:
+      widget.destroy()
+    self._attendance_rows.clear()
+
+  @error_handler
+  def _add_row(self, student: Student, row):
+    attendance_row = [
+      student.student_id,
+      student.first_name,
+      student.middle_name,
+      student.last_name,
+      student.is_attended(),
+      student.time
+    ]
+
+    for col, data in enumerate(attendance_row):
+      attendance_data = customtkinter.CTkLabel(
+        self.attendance_table_frame,
+        text = data,
+        padx = 10,
+        pady = 5   
+      )
+      attendance_data.grid(
+        row = row,
+        column = col,
+        sticky = "nsew"
+      )
+      self._attendance_rows.append(attendance_data)
+
+  @error_handler
+  def _display_attendance_table(self):
+    self._clear_attendance_table()
+
+    if len(self._context.get_students()) > 0:
+      for row, student in enumerate(self._context.get_students(), start=1):
+        self._add_row(student, row)
+    else:
+      self._alert.pop_window(
+        "No Student Available",
+        "Please select a lecture from the setting page",
+        "cancel"
+      )
+
+  # --------------------
+  # view entry
+  # --------------------
 
   @error_handler
   def launch_view(self, parent):

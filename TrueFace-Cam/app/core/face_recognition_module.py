@@ -6,27 +6,24 @@ import winsound
 from threading import Lock, Thread
 from app.config.context import Context
 from app.interfaces.student import Student
-from app.config.configrations import Configrations
 from app.controllers.attendance import insert_attendance
 from app.helper.error_handler import error_handler
+from app.interfaces.recognizer import Recognizer
 
-class FaceRecognitionModule():
+class FaceRecognitionModule(Recognizer):
 	def __init__(self) -> None:
+		super().__init__()
+
+		from app.config.configrations import Configrations
+
 		# private
 		self._context = Context()
 		self._config = Configrations()
 
 		self._scan_lock = Lock()
 
-		self._last_frame_time = 0
-		self._frame_interval = 0.5
-
 	@error_handler
 	def analyze_camera_stream(self, frame) -> bool:
-		if not self._should_process_frame():
-			return
-
-		# frame = self._downscale_frame(frame)
 		face_locations = self._detect_faces(frame)
 		known_encodings = self._get_known_encodings()
 
@@ -36,18 +33,6 @@ class FaceRecognitionModule():
 			if cam_face_encodings:
 				matches = self._compare_faces(known_encodings, cam_face_encodings[0])
 				self._process_matches(matches)
-
-	@error_handler
-	def _should_process_frame(self) -> bool:
-		current_time = time.time()
-		if current_time - self._last_frame_time < self._frame_interval:
-			return False
-		self._last_frame_time = current_time
-		return True
-
-	@error_handler
-	def _downscale_frame(self, frame):
-		return cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
 
 	@error_handler
 	def _detect_faces(self, frame):

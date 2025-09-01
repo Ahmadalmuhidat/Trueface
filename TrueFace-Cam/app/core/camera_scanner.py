@@ -6,7 +6,7 @@ from app.helper.error_handler import error_handler
 
 class CameraScanner:
   def __init__(self):
-    # Private
+    # private
     self._alert = AlertsManager()
 
     self._available_cameras = []

@@ -11,6 +11,10 @@ class Login():
   def __init__(self):
     self._context = Context()
 
+  # --------------------
+  # operations
+  # --------------------
+
   def _login(self):
     email = self.email_entry.get()
     password = self.password_entry.get()
@@ -21,10 +25,14 @@ class Login():
       self.window.destroy()
       Main().start_program()
 
+  # --------------------
+  # view entry
+  # --------------------
+
   @error_handler
   def launch_view(self):
     self.window = customtkinter.CTk()
-    self.window.geometry("400x170")
+    self.window.geometry("400x200")
     self.window.iconbitmap("logo.ico")
     self.window.resizable(
       width = 0,
@@ -92,6 +100,20 @@ class Login():
       padx = 10,
       pady = 10,
       sticky = "nsew",
+    )
+
+    # --------------------
+    # developed by footer
+    # --------------------
+    footer_label = customtkinter.CTkLabel(
+      content_frame,
+      text = "Developed by Ahmad Almuhidat",
+      font = ("Arial", 10)
+    )
+    footer_label.grid(
+      row = 7,
+      columnspan = 2,
+      pady = (5, 0)
     )
 
     self.window.mainloop()
