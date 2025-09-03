@@ -87,7 +87,15 @@ class StudentProfile:
 
     self.day_entry = customtkinter.CTkComboBox(
       pop_window,
-      values=["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      values=[
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
       width=350,
     )
     self.day_entry.pack(padx=10, pady=10)

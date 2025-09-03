@@ -208,7 +208,13 @@ class Students:
       text="Profile",
       command=lambda student=student: self._navigate_to_stduent_profile(student)
     )
-    profile_button.grid(row=row, column=6, padx=10, pady=5, sticky="nsew")
+    profile_button.grid(
+      row=row,
+      column=6,
+      padx=10,
+      pady=5,
+      sticky="nsew"
+    )
     self.students_rows.append(profile_button)
 
     delete_button = customtkinter.CTkButton(
@@ -217,7 +223,13 @@ class Students:
       fg_color="red",
       command=lambda: self._config.executor.submit(self._delete_student, student)
     )
-    delete_button.grid(row=row, column=7, padx=10, pady=5, sticky="nsew")
+    delete_button.grid(
+      row=row,
+      column=7,
+      padx=10,
+      pady=5,
+      sticky="nsew"
+      )
     self.students_rows.append(delete_button)
 
   @error_handler
@@ -245,14 +257,25 @@ class Students:
       width=400,
       placeholder_text="Search for Students..."
     )
-    search_bar.grid(row=0, column=1, sticky="nsew", pady=10)
+    search_bar.grid(
+      row=0,
+      column=1,
+      sticky="nsew",
+      pady=10
+    )
 
     search_button = customtkinter.CTkButton(
       search_bar_frame,
       command=lambda: self._search_stuedent(search_bar.get()),
       text="Search"
     )
-    search_button.grid(row=0, column=0, sticky="nsew", pady=10, padx=5)
+    search_button.grid(
+      row=0,
+      column=0,
+      sticky="nsew",
+      pady=10,
+      padx=5
+    )
 
     refresh_button = customtkinter.CTkButton(
       search_bar_frame,
@@ -260,7 +283,13 @@ class Students:
       width=100,
       text="Refresh"
     )
-    refresh_button.grid(row=0, column=4, sticky="nsew", pady=10, padx=5)
+    refresh_button.grid(
+      row=0,
+      column=4,
+      sticky="nsew",
+      pady=10,
+      padx=5
+    )
 
     add_student_button = customtkinter.CTkButton(
       search_bar_frame,
@@ -268,10 +297,21 @@ class Students:
       width=100,
       text="Add Student"
     )
-    add_student_button.grid(row=0, column=5, sticky="nsew", pady=10, padx=5)
+    add_student_button.grid(
+      row=0,
+      column=5,
+      sticky="nsew",
+      pady=10,
+      padx=5
+    )
 
     self.students_count = customtkinter.CTkLabel(search_bar_frame)
-    self.students_count.grid(row=0, column=6, padx=10, pady=5)
+    self.students_count.grid(
+      row=0,
+      column=6,
+      padx=10,
+      pady=5
+    )
 
     self.students_table_frame = customtkinter.CTkScrollableFrame(parent)
     self.students_table_frame.pack(fill="both", expand=True)

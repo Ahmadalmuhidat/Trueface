@@ -236,7 +236,13 @@ class Lectures():
       variable=self.start_hour_var,
       width=80
     )
-    self.start_hour_menu.grid(row=6, column=1, padx=(10,0), pady=5, sticky="w")
+    self.start_hour_menu.grid(
+      row=6,
+      column=1,
+      padx=(10,0),
+      pady=5,
+      sticky="w"
+    )
 
     self.start_minute_menu = customtkinter.CTkOptionMenu(
       self.pop_window,
@@ -244,7 +250,13 @@ class Lectures():
       variable=self.start_minute_var,
       width=80
     )
-    self.start_minute_menu.grid(row=6, column=1, padx=(100,0), pady=5, sticky="w")
+    self.start_minute_menu.grid(
+      row=6,
+      column=1,
+      padx=(100,0),
+      pady=5,
+      sticky="w"
+    )
 
     self.start_ampm_menu = customtkinter.CTkOptionMenu(
       self.pop_window,
@@ -252,7 +264,13 @@ class Lectures():
       variable=self.start_ampm_var,
       width=80
     )
-    self.start_ampm_menu.grid(row=6, column=1, padx=(190,0), pady=5, sticky="w")
+    self.start_ampm_menu.grid(
+      row=6,
+      column=1,
+      padx=(190,0),
+      pady=5,
+      sticky="w"
+    )
 
     end_time_label = customtkinter.CTkLabel(
       self.pop_window,
@@ -275,7 +293,13 @@ class Lectures():
       variable=self.end_hour_var,
       width=80
     )
-    self.end_hour_menu.grid(row=7, column=1, padx=(10,0), pady=5, sticky="w")
+    self.end_hour_menu.grid(
+      row=7,
+      column=1,
+      padx=(10,0),
+      pady=5,
+      sticky="w"
+    )
 
     self.end_minute_menu = customtkinter.CTkOptionMenu(
       self.pop_window,
@@ -283,7 +307,13 @@ class Lectures():
       variable=self.end_minute_var,
       width=80
     )
-    self.end_minute_menu.grid(row=7, column=1, padx=(100,0), pady=5, sticky="w")
+    self.end_minute_menu.grid(
+      row=7,
+      column=1,
+      padx=(100,0),
+      pady=5,
+      sticky="w"
+    )
 
     self.end_ampm_menu = customtkinter.CTkOptionMenu(
       self.pop_window,
@@ -291,7 +321,13 @@ class Lectures():
       variable=self.end_ampm_var,
       width=80
     )
-    self.end_ampm_menu.grid(row=7, column=1, padx=(190,0), pady=5, sticky="w")
+    self.end_ampm_menu.grid(
+      row=7,
+      column=1,
+      padx=(190,0),
+      pady=5,
+      sticky="w"
+    )
 
     section_label = customtkinter.CTkLabel(
       self.pop_window,

@@ -86,4 +86,4 @@ class Main():
 
 if __name__ == "__main__":
   Main().start_program()
-  # Login.Login().launch_view()
+  # Login().launch_view()
