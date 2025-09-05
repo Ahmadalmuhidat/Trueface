@@ -1,7 +1,6 @@
-from app.config.configrations import Configrations
 from app.interfaces.student import Student
-from app.interfaces.attendance import Attendance
-from app.interfaces.class_ import Class
+from app.interfaces.lecture import Lecture
+from app.helper.error_handler import error_handler
 
 class Context:
   _instance = None
@@ -18,18 +17,16 @@ class Context:
     self.__class__._initialized = True
 
     # global data
-    self._classes = []
-
-    # global settings
-    self.current_class = None
+    self._lectures = []
+    self._current_lecture = None
 
     # auth
     self._token = None
-    self._config = Configrations()
 
   def get_students(self):
-    return self.current_class.get_students()
+    return self._current_lecture.get_students()
 
+  @error_handler
   def set_students(self, students):
     for data in students:
       student = Student(
@@ -38,50 +35,33 @@ class Context:
         data['MiddleName'],
         data['LastName'],
         data['Gender'],
-        data['FaceID']
+        data['FaceID'],
+        data["Time"]
       )
-      self.current_class.add_student(student)
+      self._current_lecture.add_student(student)
 
-  def get_attendance(self):
-    return self.current_class.get_attendance()
-  
-  def set_attendance(self, attendance):
-    for data in attendance:
-      student = Student(
-        data['ID'],
-        data['FirstName'],
-        data['MiddleName'],
-        data['LastName']
-      )
-      student.confirm_attendance()
+  def get_lectures(self):
+    return self._lectures
 
-      attendance =  Attendance(student, data['Time'])
-      self.current_class.add_attendance(attendance)
-
-  def get_classes(self):
-    return self._classes
-  
-  def set_classes(self, classes):
-    self._classes = [
-      Class(
+  @error_handler
+  def set_lectures(self, lectures):
+    self._lectures = [
+      Lecture(
         data['ID'],
         data['SubjectArea'],
         data['StartTime'],
         data['EndTime']
-      ) for data in classes
+      ) for data in lectures
     ]
 
-  def get_current_class(self):
-    return self.current_class
+  def get_current_lecture(self):
+    return self._current_lecture
   
-  def set_current_class(self, current_class: Class):
-    self.current_class = current_class
+  def set_current_lecture(self, current_lecture: Lecture):
+    self._current_lecture = current_lecture
 
   def get_jwt_token(self):
     return self._token
   
   def set_jwt_token(self, token):
     self._token = token
-
-  def get_config(self):
-    return self._config

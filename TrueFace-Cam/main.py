@@ -10,40 +10,35 @@ import app.views.students as Students
 
 from app.config.configrations import Configrations
 from app.core.camera_manager import CameraManager
-from CTkMessagebox import CTkMessagebox
 from app.config.router import Router
-from app.core.logger import Logger
+from app.helper.logger import Logger
+from app.helper.alerts_manager import AlertsManager
+from app.helper.error_handler import error_handler
 
 customtkinter.set_appearance_mode("dark")
 
 class Main:
   def __init__(self):
-    try:
-      self._config = Configrations()
-      self._camera_manager = CameraManager()
-      self._router = Router()
-      self._logger = Logger()
-      self.window = None
+    self._config = Configrations()
+    self._camera_manager = CameraManager()
+    self._router = Router()
+    self._logger = Logger()
+    self._alert = AlertsManager()
 
-    except Exception as e:
-      self._logger.log_exception(e)
+    self.window = None
 
+  @error_handler
   def create_navbar(self):
-    """Build the navigation bar and buttons."""
-    try:
-      navbar = customtkinter.CTkFrame(self.window)
-      navbar.pack(fill=customtkinter.X)
+    navbar = customtkinter.CTkFrame(self.window)
+    navbar.pack(fill=customtkinter.X)
 
-      self._add_nav_button(navbar, "Home", Home.Home)
-      self._add_nav_button(navbar, "Attendance", Attendance.Attendance)
-      self._add_nav_button(navbar, "Students", Students.Students)
-      self._add_nav_button(navbar, "Settings", Settings.Settings)
+    self._add_nav_button(navbar, "Home", Home.Home)
+    self._add_nav_button(navbar, "Attendance", Attendance.Attendance)
+    self._add_nav_button(navbar, "Students", Students.Students)
+    self._add_nav_button(navbar, "Settings", Settings.Settings)
 
-    except Exception as e:
-      self._logger.log_exception(e)
-
+  @error_handler
   def _add_nav_button(self, parent, text, view_class):
-    """Helper to add a navigation button."""
     btn = customtkinter.CTkButton(
       parent,
       corner_radius=0,
@@ -52,26 +47,22 @@ class Main:
     )
     btn.pack(side=customtkinter.LEFT)
 
+  @error_handler
   def when_app_close(self):
-    """Handle application close event."""
-    try:
-      if self._camera_manager.get_capturing_is_active():
-        self._show_message("Error", "Please stop the camera first", "cancel")
-        return
+    if self._camera_manager.get_capturing_is_active():
+      self._alert.pop_window("Error", "Please stop the camera first", "cancel")
+      return
 
-      self._config.shutdown_event.set()
+    self._config.shutdown_event.set()
 
-      self._config.frame_processing_executor.shutdown(wait=True)  
-      self._config.ui_threads_executor.shutdown(wait=True)
+    self._config.frame_processing_executor.shutdown(wait=True)  
+    self._config.ui_threads_executor.shutdown(wait=True)
 
-      self.window.destroy()
-      sys.exit(0)
+    self.window.destroy()
+    sys.exit(0)
 
-    except Exception as e:
-      self._logger.log_exception(e)
-
+  @error_handler
   def start_program(self):
-    """Initialize and start the main application."""
     try:
       self._init_window()
       self._config.set_window(self.window)
@@ -82,27 +73,20 @@ class Main:
 
       self.window.mainloop()
 
-    except Exception as e:
-      self._logger.log_exception(e)
     except KeyboardInterrupt:
       pass
 
+  @error_handler
   def _init_window(self):
-    """Set up main application window."""
     self.window = customtkinter.CTk()
 
-    # Fullscreen dimensions
     width = self.window.winfo_screenwidth()
     height = self.window.winfo_screenheight()
-    self.window.geometry(f"{width}x{height}")
 
-    # Icon, title, close protocol
+    self.window.geometry(f"{width}x{height}")
     self.window.iconbitmap("logo.ico")
     self.window.title("TrueFace Camera")
     self.window.protocol("WM_DELETE_WINDOW", self.when_app_close)
-
-  def _show_message(self, title, message, icon):
-    CTkMessagebox(title=title, message=message, icon=icon)
 
 if __name__ == "__main__":
   # Main().start_program()

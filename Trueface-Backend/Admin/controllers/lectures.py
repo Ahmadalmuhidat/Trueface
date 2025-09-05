@@ -3,26 +3,24 @@ from django.views.decorators.csrf import csrf_exempt
 from ..utils.database import Database
 
 @csrf_exempt
-def GetClasses(request):
+def GetLectures(request):
   if request.method == "GET":
     try:
+      course_id = request.GET.get('course_id')
+      data = [course_id]
       query = '''
         SELECT
-          Classes.*,
-          Users.Name,
-          Courses.Title
+          Classes.*, Users.Name
         FROM
           Classes
         LEFT JOIN
-          Courses
-        ON
-          Courses.ID = Classes.Course
-        LEFT JOIN
           Users
         ON
-          Users.ID = Classes.Instructor
+          Classes.Instructor = Users.ID
+        WHERE
+          Classes.Course = %s
       '''
-      data = Database.ExecuteGetQuery(query)
+      data = Database.ExecuteGetQuery(query, data)
       return JsonResponse({
         "status_code": 200,
         "data": data
@@ -34,37 +32,7 @@ def GetClasses(request):
   }, status=405)
 
 @csrf_exempt
-def SearchClass(request):
-  if request.method == "GET":
-    try:
-        class_id = request.GET.get('class_id')
-        data = [class_id]
-        query = '''
-          SELECT
-            Classes.*,
-            Courses.Title
-          FROM
-            Classes
-          LEFT JOIN
-            Courses
-          ON
-            Courses.ID = Classes.Course
-          WHERE
-            Classes.ID = %s
-        '''
-        data = Database.ExecuteGetQuery(query, data)
-        return JsonResponse({
-          "status_code": 200,
-          "data": data
-        })
-    except Exception as e:
-      return JsonResponse({"error": str(e)}, status=500)
-  return JsonResponse({
-    "error": "Method not allowed"
-  }, status=405)
-
-@csrf_exempt
-def RemoveClass(request):
+def RemoveLecture(request):
   if request.method == "POST":
     try:
       
@@ -94,10 +62,9 @@ def RemoveClass(request):
   }, status=405)
 
 @csrf_exempt
-def InsertClassStudentRelation(request):
+def AddStudentToLecture(request):
   if request.method == "POST":
     try:
-      print(request.POST.get('relation_id'))
       data = (
         request.POST.get('relation_id'),
         request.POST.get('student_id'),
@@ -130,7 +97,7 @@ def InsertClassStudentRelation(request):
   }, status=405)
 
 @csrf_exempt
-def ClearClassStudentRelation(request):
+def ClearLecture(request):
   if request.method == "POST":
     try:
       student_id = request.POST.get('student_id')
@@ -149,7 +116,7 @@ def ClearClassStudentRelation(request):
   }, status=405)
 
 @csrf_exempt
-def InsertClass(request):
+def InsertLecture(request):
   if request.method == "POST":
     try:
       data = (
@@ -211,15 +178,14 @@ def InsertClass(request):
   }, status=405)
 
 @csrf_exempt
-def GetClassesStudentRelation(request):
+def GetStudentLectures(request):
   if request.method == "GET":
     try:
       student_id = request.GET.get('student_id')
       data = [student_id]
       query = '''
         SELECT
-          ClassStudentRelation.ID AS Relation,
-          Classes.ID AS Class,
+          Classes.ID,
           Classes.SubjectArea,
           Classes.StartTime,
           Classes.EndTime,
@@ -242,17 +208,23 @@ def GetClassesStudentRelation(request):
   }, status=405)
 
 @csrf_exempt
-def RemoveClassStudentRelation(request):
+def RemoveStudentFromLecture(request):
   if request.method == "POST":
     try:
-      relation_id = request.POST.get('relation_id')
-      print(relation_id)
-      data = [relation_id]
+      student_id = request.POST.get('student_id')
+      lecture_id = request.POST.get('lecture_id')
+      day = request.POST.get('day')
+
+      data = [student_id, lecture_id, day]
       query = '''
         DELETE FROM
           ClassStudentRelation
         WHERE
-          ID = %s
+          Student = %s
+        AND
+          Class = %s
+        AND
+          Day = %s
       '''
       Database.ExecutePostQuery(query, data)
       return JsonResponse({"status_code": 200, "data": True})

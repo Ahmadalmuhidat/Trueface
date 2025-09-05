@@ -1,27 +1,37 @@
-import os
-import sys
 import customtkinter
 
 from app.config.configrations import Configrations
-from app.core.logger import Logger
+from app.helper.logger import Logger
+from app.helper.error_handler import error_handler
 
 class Router:
+  _instance = None
+  _initialized = False
+
+  def __new__(cls):
+    if cls._instance is None:
+      cls._instance = super().__new__(cls)
+    return cls._instance
+
   def __init__(self):
+    if self.__class__._initialized:
+      return
+    self.__class__._initialized = True
+
     # private
-    self._current_page = None
+    self._current_view = None
     self._config = Configrations()
     self._logger = Logger()
 
+  @error_handler
   def clear_window(self):
-    if self._current_page:
-      self._current_page.pack_forget()
+    if self._current_view:
+      self._current_view.pack_forget()
   
-  def get_current_page(self):
-    return self._current_page
-  
-  def get_router_configrations(self):
-    return self._config
+  def get_current_view(self):
+    return self._current_view
 
+  @error_handler
   def navigate(self, view_class):
     try:
       self.clear_window()
@@ -30,8 +40,8 @@ class Router:
       view_instance = view_class()
       view_instance.launch_view(frame)
 
-      self._current_page = frame
-      self._current_page.pack(fill="both", expand=True)
+      self._current_view = frame
+      self._current_view.pack(fill="both", expand=True)
 
     except Exception as e:
       self._logger.log_exception(e)

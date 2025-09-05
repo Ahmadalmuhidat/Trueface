@@ -13,28 +13,23 @@ CONTEXT = Context()
 CONFIGRATIONS = Configrations()
 
 @error_handler
-def insert_attendance(student_id, student_name):
+def get_lectures_by_teacher():
   try:
     data = {
-      "student_id": student_id,
-      "current_class": CONTEXT.get_current_lecture().class_id
+      "current_teacher": CONTEXT.get_jwt_token()
     }
-    response = requests.post(
-      CONFIGRATIONS.get_backend_endpoint() + "/attendance/insert",
-      data = data
+    response = requests.get(
+      CONFIGRATIONS.get_backend_endpoint() + "/lectures/get_by_teacher",
+      params = data
     ).content
     response = json.loads(response.decode('utf-8'))
 
     if response.get("status_code") == 200:
-      ALERTS_MANAGR.pop_window(
-        title = "Attendance Recorded",
-        message = "{} has been signed".format(student_name),
-        icon = "check"
-      )
+      CONTEXT.set_lectures(response.get("data"))
     else:
       ALERTS_MANAGR.pop_window(
         title = "Error",
-        message = response.get("error") if response.get("error") else "Something went wrong while inserting attendance",
+        message = response.get("error") if response.get("error") else "Something went wrong while getting the classes",
         icon = "cancel"
       )
 

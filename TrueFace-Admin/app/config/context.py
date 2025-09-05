@@ -1,8 +1,7 @@
 from app.config.configrations import Configrations
-from app.models.class_ import Class
-from app.models.course import Course
-from app.models.user import User
-from app.models.student import Student
+from app.interfaces.course import Course
+from app.interfaces.user import User
+from app.interfaces.student import Student
 
 class Context():
   _instance = None
@@ -14,35 +13,33 @@ class Context():
     return cls._instance
 
   def __init__(self):
-    # prevent re-initialization
     if self.__class__._initialized:
       return
     self.__class__._initialized = True
 
-    self.courses = []
-    self.classes = []
-    self.users = []
-    self.students = []
+    self._courses = []
+    self._users = []
+    self._students = []
 
-    self.config = Configrations()
+    self._current_course = None
+    self._current_student = None
 
-  def get_courses(self):
-    return self.courses
+    self._config = Configrations()
+
+  def set_current_student(self, student):
+    self._current_student = student
   
-  def get_config(self):
-    return self.config
+  def get_current_student(self) -> Student:
+    return self._current_student
 
-  def get_classes(self):
-    return self.classes
-
-  def get_users(self):
-    return self.users
-
-  def get_students(self):
-    return self.students
+  def set_current_course(self, course):
+    self._current_course = course
+  
+  def get_current_course(self) -> Course:
+    return self._current_course
 
   def set_courses(self, courses):
-    self.courses = [
+    self._courses = [
       Course(
         data['ID'],
         data['Title'],
@@ -59,27 +56,14 @@ class Context():
       ) for data in courses
     ]
 
-  def set_classes(self, classes):
-    self.classes = [
-      Class(
-        data['ID'],
-        data['SubjectArea'],
-        data['CatalogNBR'],
-        data['AcademicCareer'],
-        data['Course'], 
-        data['OfferingNBR'], 
-        data['StartTime'],
-        data['EndTime'], 
-        data['Section'], 
-        data['Component'], 
-        data['Campus'], 
-        data['Name'], 
-        data['InstructorType']
-      ) for data in classes
-    ]
+  def get_courses(self):
+    return self._courses
+
+  def add_course(self, course: Course):
+    self._courses.append(course)
 
   def set_users(self, users):
-    self.users = [
+    self._users = [
       User(
         data['ID'],
         data['Name'],
@@ -88,8 +72,14 @@ class Context():
       ) for data in users
     ]
 
+  def get_users(self):
+    return self._users
+
+  def add_user(self, user: User):
+    self._users.append(user)
+
   def set_students(self, students):
-    self.students = [
+    self._students = [
       Student(
         data['ID'],
         data['FirstName'],
@@ -99,3 +89,9 @@ class Context():
         data['CreateDate']
       ) for data in students
     ]
+
+  def get_students(self):
+    return self._students
+
+  def add_student(self, stduent: Student):
+    self._students.append(stduent)

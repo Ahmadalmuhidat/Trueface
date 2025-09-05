@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 class Configrations:
   # static
   window = None
-  close_threads = False
   _instance = None
   _initialized = False
 
@@ -15,18 +14,33 @@ class Configrations:
     return cls._instance
 
   def __init__(self) -> None:
-   # prevent re-initialization
     if self.__class__._initialized:
       return
     self.__class__._initialized = True
 
     # private
-    self._backend_endpoint = "http://34.29.161.87:8000/teacher"
+    # self._backend_server_ip = "34.29.161.87"
+    self._backend_server_ip = "localhost"
+    self._backend_port = 8000
+    self._backend_entry_route = "teacher"
+    self._processing_mode = "CPU"
+
+    from app.core.face_recognition_module import FaceRecognitionModule
+    from app.core.KD_Tree import KD_Tree_Module
+
+    # AI models
+    self.current_recognizer = "face_recognition"
+    self.face_recognition_module = FaceRecognitionModule()
+    self.KD_tree_module = KD_Tree_Module()
 
     # threading
     self.frame_processing_executor = ThreadPoolExecutor(max_workers=10)
     self.ui_threads_executor = ThreadPoolExecutor(max_workers=5)
     self.shutdown_event = threading.Event()
+  
+  def switch_model_to_KTD(self):
+    self.KD_tree_module._build_kd_tree()
+    self.current_recognizer = "KTD_Tree"
 
   @classmethod
   def loading_cursor_on(cls):
@@ -47,4 +61,16 @@ class Configrations:
     return cls.window
 
   def get_backend_endpoint(self):
-    return self._backend_endpoint
+    return f"http://{self._backend_server_ip}:{self._backend_port}/{self._backend_entry_route}"
+
+  def get_backend_ip_address(self):
+    return self._backend_server_ip
+
+  def set_backend_ip_address(self, ip_address):
+    self._backend_server_ip = ip_address
+
+  def get_processing_mode(self):
+    return self._processing_mode
+
+  def set_processing_mode(self, mode):
+    self._processing_mode = mode
