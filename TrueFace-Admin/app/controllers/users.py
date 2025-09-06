@@ -11,6 +11,41 @@ CONTEXT = Context()
 CONFIGRATIONS = Configrations()
 
 @error_handler
+def update_user(user_object: User) -> None:
+	data = {
+		"user_id": user_object.user_id.lower(),
+		"name": user_object.name,
+		"email": user_object.email,
+		"role": user_object.role.lower()
+	}
+
+	response = requests.post(
+		CONFIGRATIONS.get_backend_endpoint() + "/users/update",
+		data=data,
+		timeout=5
+	).content
+	response = json.loads(response.decode('utf-8'))
+
+	if response.get("status_code") == 200:
+		title = "Success"
+		message = "User has been updated successfully"
+		icon = "check"
+		CTkMessagebox(
+			title=title,
+			message=message,
+			icon=icon
+		)
+	else:
+		title = "Error"
+		message = response.get("error")
+		icon = "cancel"
+		CTkMessagebox(
+			title=title,
+			message=message if message else "Something went wrong while updating the user",
+			icon=icon
+		)
+
+@error_handler
 def get_users() -> list:
 	response = requests.get(CONFIGRATIONS.get_backend_endpoint() + "/users/get_all", timeout=5).content
 	response = json.loads(response.decode('utf-8'))

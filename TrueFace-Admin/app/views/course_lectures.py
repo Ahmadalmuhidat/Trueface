@@ -4,7 +4,7 @@ from app.interfaces.lecture import Lecture
 from app.config.context import Context
 from app.config.configrations import Configrations
 from app.interfaces.lecture import Lecture
-from app.controllers.lectures import add_lecture, remove_lecture
+from app.controllers.lectures import add_lecture, remove_lecture, update_lecture
 from app.helper.error_handler import error_handler
 from app.helper.time import convert_to_24h
 
@@ -48,7 +48,25 @@ class Lectures():
     self._display_lectures_table()
 
   @error_handler
-  def _submit_new_class(self):
+  def _submit_edit_class(self, lecture: Lecture):
+    self._config.loading_cursor_on()
+
+    lecture.subject_area = self.subject_entry.get()
+    lecture.catalog_nbr = self.catalog_nbr_entry.get()
+    lecture.academic_career = self.academic_career_entry.get()
+    lecture.offering_nbr = self.offering_nbr_entry.get()
+    lecture.section = self.section_entry.get()
+    lecture.component = self.component_entry.get()
+    lecture.campus = self.campus_entry.get()
+    lecture.instructor.instructor_id = next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
+
+    update_lecture(lecture)
+    self._refresh_lectures_table()
+    self.pop_window.destroy()
+    self._config.loading_cursor_off()
+
+  @error_handler
+  def _submit_new_lecture(self):
     self._config.loading_cursor_on()
 
     new_lecture = Lecture(
@@ -63,8 +81,7 @@ class Lectures():
       self.section_entry.get(),
       self.component_entry.get(),
       self.campus_entry.get(),
-      next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None),
-      self.instructor_type_entry.get()
+      next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
     )
     add_lecture(new_lecture)
 
@@ -78,7 +95,7 @@ class Lectures():
     self.component_entry.delete(0, customtkinter.END)
     self.campus_entry.delete(0, customtkinter.END)
 
-    self._add_row(new_lecture, len(self.lectures) + 1)
+    self._add_lecture_row(new_lecture, len(self.lectures) + 1)
     self._context.get_current_course().add_lecture(new_lecture)
     self.lectures.append(new_lecture)
     self.lectures_count.configure(text="Results: " + str(len(self.lectures)))
@@ -91,6 +108,99 @@ class Lectures():
   # --------------------
   # forms
   # --------------------
+
+  @error_handler
+  def _edit_lecture_form(self, lecture: Lecture):
+    self.pop_window = customtkinter.CTkToplevel()
+    self.pop_window.grab_set()
+    self.pop_window.geometry("520x520")
+    self.pop_window.resizable(False, False)
+    self.pop_window.title("Edit Class")
+
+    # Class ID (readonly)
+    class_id_label = customtkinter.CTkLabel(self.pop_window, text="Class ID:")
+    class_id_label.grid(row=0, column=0, padx=10, pady=5)
+
+    self.lecture_id_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.lecture_id_entry.grid(row=0, column=1, padx=10, pady=5)
+    self.lecture_id_entry.insert(0, lecture.lecture_id)
+    self.lecture_id_entry.configure(state="readonly")
+
+    # Subject
+    subject_label = customtkinter.CTkLabel(self.pop_window, text="Subject:")
+    subject_label.grid(row=1, column=0, padx=10, pady=5)
+
+    self.subject_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.subject_entry.grid(row=1, column=1, padx=10, pady=5)
+    self.subject_entry.insert(0, lecture.subject_area)
+
+    # Catalog NBR
+    catalog_nbr_label = customtkinter.CTkLabel(self.pop_window, text="Catalog NBR:")
+    catalog_nbr_label.grid(row=2, column=0, padx=10, pady=5)
+
+    self.catalog_nbr_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.catalog_nbr_entry.grid(row=2, column=1, padx=10, pady=5)
+    self.catalog_nbr_entry.insert(0, lecture.catalog_nbr)
+
+    # Academic Career
+    academic_career_label = customtkinter.CTkLabel(self.pop_window, text="Academic Career:")
+    academic_career_label.grid(row=4, column=0, padx=10, pady=5)
+
+    self.academic_career_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.academic_career_entry.grid(row=4, column=1, padx=10, pady=5)
+    self.academic_career_entry.insert(0, lecture.academic_career)
+
+    # Offering NBR
+    offering_nbr_label = customtkinter.CTkLabel(self.pop_window, text="Course Offering NBR:")
+    offering_nbr_label.grid(row=5, column=0, padx=10, pady=5)
+
+    self.offering_nbr_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.offering_nbr_entry.grid(row=5, column=1, padx=10, pady=5)
+    self.offering_nbr_entry.insert(0, lecture.offering_nbr)
+
+    # Section
+    section_label = customtkinter.CTkLabel(self.pop_window, text="Section:")
+    section_label.grid(row=6, column=0, padx=10, pady=5)
+
+    self.section_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.section_entry.grid(row=6, column=1, padx=10, pady=5)
+    self.section_entry.insert(0, lecture.section)
+
+    # Component
+    component_label = customtkinter.CTkLabel(self.pop_window, text="Component:")
+    component_label.grid(row=7, column=0, padx=10, pady=5)
+
+    self.component_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.component_entry.grid(row=7, column=1, padx=10, pady=5)
+    self.component_entry.insert(0, lecture.component)
+
+    # Campus
+    campus_label = customtkinter.CTkLabel(self.pop_window, text="Campus:")
+    campus_label.grid(row=8, column=0, padx=10, pady=5)
+
+    self.campus_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.campus_entry.grid(row=8, column=1, padx=10, pady=5)
+    self.campus_entry.insert(0, lecture.campus)
+
+    # Instructor ID
+    instructor_id_label = customtkinter.CTkLabel(self.pop_window, text="Instructor ID:")
+    instructor_id_label.grid(row=9, column=0, padx=10, pady=5)
+
+    self.instructor_id_entry = customtkinter.CTkComboBox(
+        self.pop_window,
+        width=350,
+        values=[user.name for user in self._context.get_users()]
+    )
+    self.instructor_id_entry.grid(row=9, column=1, padx=10, pady=5)
+    self.instructor_id_entry.set(lecture.instructor.name)
+
+    # Submit
+    submit_button = customtkinter.CTkButton(
+        self.pop_window,
+        text="Update Class",
+        command=lambda: self._submit_edit_class(lecture)
+    )
+    submit_button.grid(row=14, columnspan=2, sticky="nsew", padx=10, pady=5)
 
   @error_handler
   def _add_class_form(self):
@@ -418,37 +528,10 @@ class Lectures():
       pady=5
     )
 
-    instructor_type_label = customtkinter.CTkLabel(
-      self.pop_window,
-      text="Instructor Type:"
-    )
-    instructor_type_label.grid(
-      row=12,
-      column=0,
-      padx=10,
-      pady=5
-    )
-    self.instructor_type_entry = customtkinter.CTkComboBox(
-      self.pop_window,
-      width=350,
-      values=[
-        "Lecturer",
-        "Lab Instructor",
-        "Teaching Assistant",
-        "Course Coordinator"
-      ]
-    )
-    self.instructor_type_entry.grid(
-      row=12,
-      column=1,
-      padx=10,
-      pady=5
-    )
-
     submit_button = customtkinter.CTkButton(
       self.pop_window,
       text="Save Class",
-      command= lambda: self._config.executor.submit(self._submit_new_class)
+      command= lambda: self._config.executor.submit(self._submit_new_lecture)
     )
     submit_button.grid(
       row=14,
@@ -463,7 +546,7 @@ class Lectures():
   # --------------------
 
   @error_handler
-  def _add_row(self, lecture: Lecture, row):
+  def _add_lecture_row(self, lecture: Lecture, row):
     class_row = [
       lecture.lecture_id,
       lecture.subject_area,
@@ -475,8 +558,7 @@ class Lectures():
       lecture.section,
       lecture.component,
       lecture.campus,
-      lecture.instructor_id,
-      lecture.instructor_type
+      lecture.instructor.name
     ]
 
     for col, data in enumerate(class_row):
@@ -497,7 +579,21 @@ class Lectures():
     )
     delete_button.grid(
       row=row,
-      column=len(class_row),
+      column=11,
+      sticky="nsew",
+      padx=10,
+      pady=5
+    )
+    self.lectures_rows.append(delete_button)
+
+    delete_button = customtkinter.CTkButton(
+      self.lectures_table_frame,
+      text="Edit",
+      command=lambda: self._config.executor.submit(self._edit_lecture_form, lecture)
+    )
+    delete_button.grid(
+      row=row,
+      column=12,
       sticky="nsew",
       padx=10,
       pady=5
@@ -516,7 +612,7 @@ class Lectures():
     self._clear_lectures_table()
 
     for row, lecture in enumerate(self.lectures, start=1):
-      self._add_row(lecture, row)
+      self._add_lecture_row(lecture, row)
 
     self.lectures_count.configure(
       text="Results: " + str(len(self.lectures))

@@ -109,7 +109,7 @@ def GetLectures(request):
       data = [course_id]
       query = '''
         SELECT
-          Classes.*, Users.Name
+          Classes.*, Users.Name, Users.ID AS INS_ID
         FROM
           Classes
         LEFT JOIN

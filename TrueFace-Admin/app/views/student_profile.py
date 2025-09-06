@@ -59,6 +59,10 @@ class StudentProfile:
     self._add_lecture_row(selected_lecture, len(self.lectures) + 1)
     self._config.loading_cursor_off()
 
+  @error_handler
+  def _clear_all_lecture(self):
+    pass
+
   # --------------------
   # forms
   # --------------------
@@ -231,10 +235,24 @@ class StudentProfile:
       padx=5
     )
 
+    add_lecture_button = customtkinter.CTkButton(
+      search_bar_frame,
+      width=100,
+      text="Clear all Lectures",
+      command=self._clear_all_lecture
+    )
+    add_lecture_button.grid(
+      row=0,
+      column=6,
+      sticky="nsew",
+      pady=10,
+      padx=5
+    )
+
     self.students_count = customtkinter.CTkLabel(search_bar_frame)
     self.students_count.grid(
       row=0,
-      column=6,
+      column=7,
       padx=10,
       pady=5
     )
