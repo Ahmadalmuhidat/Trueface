@@ -49,6 +49,44 @@ def InsertStudent(request):
   }, status=405)
 
 @csrf_exempt
+def UpdateStudent(request):
+  if request.method == "POST":
+    try:
+      student_id = request.POST.get('student_id')
+      first_name = request.POST.get('first_name')
+      middle_name = request.POST.get('middle_name')
+      last_name = request.POST.get('last_name')
+      gender = request.POST.get('gender')
+
+      query = '''
+        UPDATE Students
+        SET
+          FirstName = %s,
+          MiddleName = %s,
+          LastName = %s,
+          Gender = %s
+        WHERE ID = %s
+      '''
+      data = (
+        first_name,
+        middle_name,
+        last_name,
+        gender,
+        student_id
+      )
+
+      updated = Database.ExecutePostQuery(query, data)
+
+      if updated:
+        return JsonResponse({"status_code": 200, "data": True})
+      else:
+        return JsonResponse({"error": "Student not found or nothing to update"}, status=404)
+    except Exception as e:
+      return JsonResponse({"error": str(e)}, status=500)
+
+  return JsonResponse({"error": "Method not allowed"}, status=405)
+
+@csrf_exempt
 def RemoveStudent(request):
   if request.method == "POST":
     try:

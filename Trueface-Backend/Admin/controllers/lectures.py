@@ -3,35 +3,6 @@ from django.views.decorators.csrf import csrf_exempt
 from ..utils.database import Database
 
 @csrf_exempt
-def GetLectures(request):
-  if request.method == "GET":
-    try:
-      course_id = request.GET.get('course_id')
-      data = [course_id]
-      query = '''
-        SELECT
-          Classes.*, Users.Name
-        FROM
-          Classes
-        LEFT JOIN
-          Users
-        ON
-          Classes.Instructor = Users.ID
-        WHERE
-          Classes.Course = %s
-      '''
-      data = Database.ExecuteGetQuery(query, data)
-      return JsonResponse({
-        "status_code": 200,
-        "data": data
-      })
-    except Exception as e:
-      return JsonResponse({"error": str(e)}, status=500)
-  return JsonResponse({
-    "error": "Method not allowed"
-  }, status=405)
-
-@csrf_exempt
 def RemoveLecture(request):
   if request.method == "POST":
     try:
@@ -60,6 +31,63 @@ def RemoveLecture(request):
   return JsonResponse({
     "error": "Method not allowed"
   }, status=405)
+
+@csrf_exempt
+def UpdateLecture(request):
+  if request.method == "POST":
+    try:
+      lecture_id = request.POST.get('class_id')
+      subject = request.POST.get('subject')
+      catalog_nbr = request.POST.get('catalog_nbr')
+      academic_career = request.POST.get('academic_career')
+      course = request.POST.get('course')
+      offering_nbr = request.POST.get('offering_nbr')
+      start_time = request.POST.get('start_time')
+      end_time = request.POST.get('end_time')
+      section = request.POST.get('section')
+      component = request.POST.get('component')
+      campus = request.POST.get('campus')
+      instructor_id = request.POST.get('instructor_id')
+      query = '''
+        UPDATE Classes
+        SET
+          SubjectArea = %s,
+          CatalogNbr = %s,
+          AcademicCareer = %s,
+          Course = %s,
+          OfferingNbr = %s,
+          StartTime = %s,
+          EndTime = %s,
+          Section = %s,
+          Component = %s,
+          Campus = %s,
+          Instructor = %s
+        WHERE ID = %s
+      '''
+      data = (
+        subject,
+        catalog_nbr,
+        academic_career,
+        course,
+        offering_nbr,
+        start_time,
+        end_time,
+        section,
+        component,
+        campus,
+        instructor_id,
+        lecture_id
+      )
+
+      updated = Database.ExecutePostQuery(query, data)
+      if updated:
+        return JsonResponse({"status_code": 200, "data": True})
+      else:
+        return JsonResponse({"error": "Lecture not found or nothing to update"}, status=404)
+    except Exception as e:
+      return JsonResponse({"error": str(e)}, status=500)
+
+  return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @csrf_exempt
 def AddStudentToLecture(request):
@@ -119,7 +147,7 @@ def ClearLecture(request):
 def InsertLecture(request):
   if request.method == "POST":
     try:
-      data = (
+      data = [
         request.POST.get('class_id'),
         request.POST.get('subject'),
         request.POST.get('catalog_nbr'),
@@ -131,9 +159,8 @@ def InsertLecture(request):
         request.POST.get('section'),
         request.POST.get('component'),
         request.POST.get('campus'),
-        request.POST.get('instructor_id'),
-        request.POST.get('instructor_type'),
-      )
+        request.POST.get('instructor_id')
+      ]
       query = '''
         INSERT INTO
         Classes
@@ -149,12 +176,10 @@ def InsertLecture(request):
           Section,
           Component,
           Campus,
-          Instructor,
-          InstructorType
+          Instructor
         )
         VALUES
         (
-          %s,
           %s,
           %s,
           %s,
