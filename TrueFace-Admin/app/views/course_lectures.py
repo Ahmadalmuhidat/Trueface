@@ -60,8 +60,6 @@ class Lectures():
     lecture.campus = self.campus_entry.get()
     lecture.instructor.instructor_id = next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
 
-    # in all update functions make sure to update the object too, then display table after you make sure that the backend has updated the record
-
     update_lecture(lecture)
     self._refresh_lectures_table()
     self.pop_window.destroy()
@@ -256,7 +254,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      elf.pop_window,
+      self.pop_window,
       text="Section:",
       anchor="w"
     ).grid(
