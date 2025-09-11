@@ -7,7 +7,7 @@ from app.config.configrations import Configrations
 from app.interfaces.student import Student
 from app.config.router import Router
 from app.views.student_profile import StudentProfile
-from app.controllers.students import add_student, remove_student
+from app.controllers.students import add_student, remove_student, update_student
 from app.helper.error_handler import error_handler
 
 class Students:
@@ -76,6 +76,20 @@ class Students:
     self._config.loading_cursor_off()
 
   @error_handler
+  def _submit_edit_student(self, student: Student):
+    self._config.loading_cursor_on()
+
+    student.first_name = self.student_first_name_entry.get()
+    student.middle_name = self.student_middle_name_entry.get()
+    student.last_name = self.student_last_name_entry.get()
+    student.gender = self.student_gender_entry.get()
+
+    update_student(student)
+    self._refresh_students_table()
+    self.pop_window.destroy()
+    self._config.loading_cursor_off()
+
+  @error_handler
   def _navigate_to_stduent_profile(self, student: Student):
     self._context.set_current_student(student)
     self._router.navigate(StudentProfile)
@@ -83,6 +97,171 @@ class Students:
   # --------------------
   # forms
   # --------------------
+
+  def _edit_student_form(self, student: Student):
+    self.pop_window = customtkinter.CTkToplevel()
+    self.pop_window.grab_set()
+    self.pop_window.title("Edit Student")
+    self.pop_window.geometry("420x420")
+    self.pop_window.resizable(False, False)
+
+    entry_width = 300
+    pad_x, pad_y = 15, 10
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Student ID:",
+      anchor="w"
+    ).grid(
+      row=0,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+
+    self.student_id_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_id_entry.grid(
+      row=0,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+    self.student_id_entry.insert(
+      0,
+      student.student_id
+    )
+    self.student_id_entry.configure(state="readonly")
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="First Name:",
+      anchor="w"
+    ).grid(
+      row=1,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+
+    self.student_first_name_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_first_name_entry.grid(
+      row=1,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+    self.student_first_name_entry.insert(
+      0,
+      student.first_name
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Middle Name:",
+      anchor="w"
+    ).grid(
+      row=2,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+
+    self.student_middle_name_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_middle_name_entry.grid(
+      row=2,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+    self.student_middle_name_entry.insert(
+      0,
+      student.middle_name
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Last Name:",
+      anchor="w"
+    ).grid(
+      row=3,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+
+    self.student_last_name_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_last_name_entry.grid(
+      row=3,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew")
+    self.student_last_name_entry.insert(
+      0,
+      student.last_name
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Gender:",
+      anchor="w"
+    ).grid(
+      row=4,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+
+    self.student_gender_entry = customtkinter.CTkComboBox(
+      self.pop_window,
+      values=["Male", "Female"],
+      width=entry_width
+    )
+    self.student_gender_entry.grid(
+      row=4,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+    self.student_gender_entry.set(student.gender)
+
+    submit_button = customtkinter.CTkButton(
+      self.pop_window,
+      text="Update Student",
+      command=lambda: self._submit_edit_student(student),
+      width=entry_width
+    )
+    submit_button.grid(
+      row=5,
+      column=0,
+      columnspan=2,
+      padx=pad_x,
+      pady=pad_y + 5,
+      sticky="ew"
+    )
+
+    self.pop_window.columnconfigure(1, weight=1)
 
   @error_handler
   def _select_image(self):
@@ -94,83 +273,186 @@ class Students:
       self.student_image_entry.delete(0, customtkinter.END)
       self.student_image_entry.insert(0, file_path)
 
-  @error_handler
   def _add_student_form(self):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
-    self.pop_window.geometry("490x410")
-    self.pop_window.resizable(False, False)
     self.pop_window.title("Add New Student")
+    self.pop_window.geometry("420x440")
+    self.pop_window.resizable(False, False)
 
-    labels = [
-      ("Student ID:", 0),
-      ("First Name:", 1),
-      ("Middle Name:", 2),
-      ("Last Name:", 3),
-      ("Gender:", 4),
-      ("Image:", 5)
-    ]
-    self.entries = {}
+    entry_width = 300
+    pad_x, pad_y = 15, 10
 
-    for text, row in labels:
-      label = customtkinter.CTkLabel(self.pop_window, text=text)
-      label.grid(
-        row=row,
-        column=0,
-        padx=10,
-        pady=15,
-        sticky="w"
-      )
+    student_id_label = customtkinter.CTkLabel(
+      self.pop_window,
+      text="Student ID:",
+      anchor="w"
+    )
+    student_id_label.grid(
+      row=0,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.student_id_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_id_entry.grid(
+      row=0,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
 
-      if text == "Gender:":
-        entry = customtkinter.CTkComboBox(
-          self.pop_window,
-          values=["Male", "Female"],
-          width=350
-        )
-        entry.set("Male")
-      else:
-        entry = customtkinter.CTkEntry(
-          self.pop_window,
-          width=350
-        )
-      entry.grid(row=row, column=1, padx=10, pady=15)
-      self.entries[text] = entry
+    first_name_label = customtkinter.CTkLabel(
+      self.pop_window,
+      text="First Name:",
+      anchor="w"
+    )
+    first_name_label.grid(
+      row=1,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.student_first_name_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_first_name_entry.grid(
+      row=1,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
 
-    self.student_id_entry = self.entries["Student ID:"]
-    self.student_first_name_entry = self.entries["First Name:"]
-    self.student_middle_name_entry = self.entries["Middle Name:"]
-    self.student_last_name_entry = self.entries["Last Name:"]
-    self.student_gender_entry = self.entries["Gender:"]
-    self.student_image_entry = self.entries["Image:"]
+    middle_name_label = customtkinter.CTkLabel(
+      self.pop_window,
+      text="Middle Name:",
+      anchor="w"
+    )
+    middle_name_label.grid(
+      row=2,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.student_middle_name_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_middle_name_entry.grid(
+      row=2,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    last_name_label = customtkinter.CTkLabel(
+      self.pop_window,
+      text="Last Name:",
+      anchor="w"
+    )
+    last_name_label.grid(
+      row=3,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.student_last_name_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_last_name_entry.grid(
+      row=3,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    gender_label = customtkinter.CTkLabel(
+      self.pop_window,
+      text="Gender:",
+      anchor="w"
+    )
+    gender_label.grid(
+      row=4,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.student_gender_entry = customtkinter.CTkComboBox(
+      self.pop_window,
+      values=["Male", "Female"],
+      width=entry_width
+    )
+    self.student_gender_entry.set("Male")
+    self.student_gender_entry.grid(
+      row=4,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    image_label = customtkinter.CTkLabel(
+      self.pop_window,
+      text="Image:",
+      anchor="w"
+    )
+    image_label.grid(
+      row=5,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.student_image_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
+    self.student_image_entry.grid(
+      row=5,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
 
     select_image_button = customtkinter.CTkButton(
       self.pop_window,
       text="Select Image",
-      width=30,
-      height=30,
-      command=self._select_image
+      command=self._select_image,
+      width=120
     )
-    select_image_button.grid(
-      row=5,
-      column=0,
-      padx=10,
-      pady=15
-    )
+    select_image_button.grid(row=5, column=0, padx=pad_x, pady=pad_y, sticky="w")
 
     submit_button = customtkinter.CTkButton(
       self.pop_window,
       text="Save Student",
       command=self._submit_new_student,
-      width=350
+      width=entry_width
     )
     submit_button.grid(
-      row=7,
+      row=6,
+      column=0,
       columnspan=2,
-      sticky="nsew",
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y + 5,
+      sticky="ew"
     )
+
+    self.pop_window.columnconfigure(1, weight=1)
 
   # --------------------
   # table functions
@@ -217,6 +499,20 @@ class Students:
     )
     self.students_rows.append(profile_button)
 
+    edit_button = customtkinter.CTkButton(
+      self.students_table_frame,
+      text="Edit",
+      command=lambda: self._config.executor.submit(self._edit_student_form, student)
+    )
+    edit_button.grid(
+      row=row,
+      column=7,
+      padx=10,
+      pady=5,
+      sticky="nsew"
+      )
+    self.students_rows.append(edit_button)
+
     delete_button = customtkinter.CTkButton(
       self.students_table_frame,
       text="Delete",
@@ -225,7 +521,7 @@ class Students:
     )
     delete_button.grid(
       row=row,
-      column=7,
+      column=8,
       padx=10,
       pady=5,
       sticky="nsew"

@@ -24,8 +24,7 @@ def add_lecture(lecture_object: Lecture) -> None:
 		"section": lecture_object.section,
 		"component": lecture_object.component,
 		"campus": lecture_object.campus,
-		"instructor_id": lecture_object.instructor_id,
-		"instructor_type": lecture_object.instructor_type.lower()
+		"instructor_id": lecture_object.instructor.instructor_id
 	}
 
 	response = requests.post(
@@ -86,3 +85,36 @@ def remove_lecture(lecture_object: Lecture) -> None:
 				message = message if message else "Something went wrong while removing the lecture",
 				icon = icon
 			)
+
+@error_handler
+def update_lecture(lecture_object: Lecture) -> None:
+	data = {
+		"lecture": lecture_object.lecture_id,
+		"subject": lecture_object.subject_area,
+		"catalog_nbr": lecture_object.catalog_nbr,
+		"academic_career": lecture_object.academic_career,
+		"course": CONTEXT.get_current_course().course_id,
+		"offering_nbr": lecture_object.offering_nbr,
+		"start_time": lecture_object.start_time,
+		"end_time": lecture_object.end_time,
+		"section": lecture_object.section,
+		"component": lecture_object.component,
+		"campus": lecture_object.campus,
+		"instructor": lecture_object.instructor.instructor_id
+	}
+
+	response = requests.post(
+		CONFIGRATIONS.get_backend_endpoint() + "/lectures/update",
+		data=data,
+		timeout=5
+	).content
+	response = json.loads(response.decode("utf-8"))
+
+	if response.get("status_code") == 200:
+		CTkMessagebox(title="Success", message="Lecture updated", icon="check")
+	else:
+		CTkMessagebox(
+			title="Error",
+			message=response.get("error") or "Something went wrong while updating the lecture",
+			icon="cancel"
+		)

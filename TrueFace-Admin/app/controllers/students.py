@@ -233,3 +233,35 @@ def get_lectures_by_student(student_object: Student) -> None:
 			message = message if message else "Something went wrong while getting lectures for the student",
 			icon = icon
 		)
+
+@error_handler
+def update_student(student_object: Student) -> None:
+	data = {
+		"student_id": student_object.student_id.lower(),
+		"first_name": student_object.first_name,
+		"middle_name": student_object.middle_name,
+		"last_name": student_object.last_name,
+		"gender": student_object.gender.lower()
+	}
+
+	response = requests.post(
+		CONFIGRATIONS.get_backend_endpoint() + "/students/update",
+		data=data,
+		timeout=5
+	).content
+	response = json.loads(response.decode('utf-8'))
+
+	if response.get("status_code") == 200:
+		title = "Success"
+		message = "Student has been updated successfully"
+		icon = "check"
+		CTkMessagebox(title=title, message=message, icon=icon)
+	else:
+		title = "Error"
+		message = response.get("error")
+		icon = "cancel"
+		CTkMessagebox(
+			title=title,
+			message=message if message else "Something went wrong while updating the student",
+			icon=icon
+		)

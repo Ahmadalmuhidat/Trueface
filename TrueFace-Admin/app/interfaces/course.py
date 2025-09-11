@@ -1,6 +1,7 @@
 import threading
 
 from app.interfaces.lecture import Lecture
+from app.interfaces.instructor import Instructor
 from typing import List
 from app.helper.error_handler import error_handler
 
@@ -46,9 +47,11 @@ class Course:
         data['EndTime'], 
         data['Section'], 
         data['Component'], 
-        data['Campus'], 
-        data['Name'], 
-        data['InstructorType']
+        data['Campus'],
+        Instructor(
+          data['INS_ID'],
+          data['Name']
+        )
       )
       self.add_lecture(lecture_object)
   

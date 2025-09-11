@@ -28,6 +28,45 @@ def get_courses() -> list:
     )
 
 @error_handler
+def update_course(course_object: Course) -> None:
+  data = {
+    "course_id": course_object.course_id.lower(),  # ID is fixed
+    "title": course_object.title,
+    "credit": course_object.credit,
+    "maximum_units": course_object.maximum_units,
+    "long_course_title": course_object.long_course_title,
+    "offering_nbr": course_object.offering_nbr,
+    "academic_group": course_object.academic_group,
+    "subject_area": course_object.subject_area,
+    "catalog_nbr": course_object.catalog_nbr,
+    "campus": course_object.campus,
+    "academic_organization": course_object.academic_organization,
+    "component": course_object.component
+  }
+
+  response = requests.post(
+    CONFIGRATIONS.get_backend_endpoint() + "/courses/update",
+    data=data,
+    timeout=5
+  ).content
+  response = json.loads(response.decode('utf-8'))
+
+  if response.get("status_code") == 200:
+    title = "Success"
+    message = "Course has been updated"
+    icon = "check"
+    CTkMessagebox(title=title, message=message, icon=icon)
+  else:
+    title = "Error"
+    message = response.get("error")
+    icon = "cancel"
+    CTkMessagebox(
+      title=title,
+      message=message if message else "Something went wrong while updating the course",
+      icon=icon
+    )
+
+@error_handler
 def add_course(course_object: Course) -> None:
   data = {
     "course_id": course_object.course_id.lower(),

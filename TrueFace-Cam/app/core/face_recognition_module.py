@@ -23,7 +23,7 @@ class FaceRecognitionModule(Recognizer):
 		self._scan_lock = Lock()
 
 	@error_handler
-	def analyze_camera_stream(self, frame) -> bool:
+	def analyze_camera_stream(self, frame):
 		face_locations = self._detect_faces(frame)
 		known_encodings = self._get_known_encodings()
 

@@ -27,10 +27,10 @@ def InsertUser(request):
         %s
       )
     '''
-    mailer.SendGeneratedPasswordMail(
-      generated_password,
-      [request.POST.get("email")]
-    )
+    # mailer.SendGeneratedPasswordMail(
+    #   generated_password,
+    #   [request.POST.get("email")]
+    # )
 
     return JsonResponse({
       "status_code": 200,
@@ -39,6 +39,39 @@ def InsertUser(request):
   return JsonResponse({
     "error": "Method not allowed"
   }, status=405)
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from ..utils.database import Database
+
+@csrf_exempt
+def UpdateUser(request):
+  if request.method == "POST":
+    try:
+      user_id = request.POST.get("user_id")
+      name = request.POST.get("name")
+      email = request.POST.get("email")
+      role = request.POST.get("role")
+
+      query = '''
+        UPDATE Users
+        SET
+          Name = %s,
+          Email = %s,
+          Role = %s
+        WHERE ID = %s
+      '''
+      data = (name, email, role, user_id)
+      updated = Database.ExecutePostQuery(query, data)
+
+      if updated:
+        return JsonResponse({"status_code": 200, "data": True})
+      else:
+        return JsonResponse({"error": "User not found or nothing to update"}, status=404)
+    except Exception as e:
+      return JsonResponse({"error": str(e)}, status=500)
+
+  return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @csrf_exempt
 def GetUsers(request):
