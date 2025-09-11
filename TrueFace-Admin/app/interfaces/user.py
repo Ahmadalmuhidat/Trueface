@@ -5,6 +5,7 @@ class User:
     self.email = email
     self.role = role
 
+    self_lectures = []
 
   def update(self, name: str = None, email: str = None, role: str = None):
     if name is not None:

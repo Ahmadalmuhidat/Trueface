@@ -20,3 +20,5 @@ class Lecture:
     self.campus = campus
     self.instructor = instructor
     self.day = day
+
+    self._students = []

@@ -52,7 +52,8 @@ def UpdateCourse(request):
           Campus = %s,
           AcademicOrganization = %s,
           Component = %s
-        WHERE ID = %s
+        WHERE
+          ID = %s
       '''
       data = (
         title,
@@ -78,7 +79,6 @@ def UpdateCourse(request):
 
     except Exception as e:
       return JsonResponse({"error": str(e)}, status=500)
-
   return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @csrf_exempt

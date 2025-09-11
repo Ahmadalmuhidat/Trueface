@@ -122,15 +122,15 @@ class Courses():
   # --------------------
   # forms
   # --------------------
-
-  @error_handler
   def _edit_course_form(self, course: Course):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
-
-    self.pop_window.geometry("535x510")
-    self.pop_window.resizable(False, False)
     self.pop_window.title("Edit Course")
+    self.pop_window.geometry("535x550")
+    self.pop_window.resizable(False, False)
+
+    entry_width = 350
+    padx, pady = 10, 5
 
     course_id_label = customtkinter.CTkLabel(
       self.pop_window,
@@ -139,21 +139,24 @@ class Courses():
     course_id_label.grid(
       row=0,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_id_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_id_entry.grid(
       row=0,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
     )
-    self.course_id_entry.insert(0, course.course_id)
+    self.course_id_entry.insert(
+      0,
+      course.course_id
+    )
     self.course_id_entry.configure(state="readonly")
 
     course_title_label = customtkinter.CTkLabel(
@@ -163,193 +166,23 @@ class Courses():
     course_title_label.grid(
       row=1,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_title_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_title_entry.grid(
       row=1,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
     )
-    self.course_title_entry.insert(0, course.title)
-
-    course_credit_label = customtkinter.CTkLabel(
-      self.pop_window,
-      text="Credit:"
-    )
-    course_credit_label.grid(
-      row=2,
-      column=0,
-      padx=10,
-      pady=5
-    )
-
-    self.course_credit_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_credit_entry.grid(row=2, column=1, padx=10, pady=5)
-    self.course_credit_entry.insert(0, course.credit)
-
-    course_maximum_units_label = customtkinter.CTkLabel(self.pop_window, text="Maximum Units:")
-    course_maximum_units_label.grid(row=3, column=0, padx=10, pady=5)
-
-    self.course_maximum_units_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_maximum_units_entry.grid(row=3, column=1, padx=10, pady=5)
-    self.course_maximum_units_entry.insert(0, course.maximum_units)
-
-    course_long_title_label = customtkinter.CTkLabel(self.pop_window, text="Long Course Title:")
-    course_long_title_label.grid(row=4, column=0, padx=10, pady=5)
-
-    self.course_long_title_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_long_title_entry.grid(row=4, column=1, padx=10, pady=5)
-    self.course_long_title_entry.insert(0, course.long_course_title)
-
-    course_offering_nbr_label = customtkinter.CTkLabel(self.pop_window, text="Offering NBR:")
-    course_offering_nbr_label.grid(row=5, column=0, padx=10, pady=5)
-
-    self.course_offering_nbr_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_offering_nbr_entry.grid(row=5, column=1, padx=10, pady=5)
-    self.course_offering_nbr_entry.insert(0, course.offering_nbr)
-
-    course_academic_group_label = customtkinter.CTkLabel(self.pop_window, text="Academic Group:")
-    course_academic_group_label.grid(row=6, column=0, padx=10, pady=5)
-
-    self.course_academic_group_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_academic_group_entry.grid(row=6, column=1, padx=10, pady=5)
-    self.course_academic_group_entry.insert(0, course.academic_group)
-
-    course_subject_area_label = customtkinter.CTkLabel(self.pop_window, text="Subject Area:")
-    course_subject_area_label.grid(row=7, column=0, padx=10, pady=5)
-
-    self.course_subject_area_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_subject_area_entry.grid(row=7, column=1, padx=10, pady=5)
-    self.course_subject_area_entry.insert(0, course.subject_area)
-
-    course_catalog_nbr_label = customtkinter.CTkLabel(self.pop_window, text="Catalog NBR:")
-    course_catalog_nbr_label.grid(row=8, column=0, padx=10, pady=5)
-
-    self.course_catalog_nbr_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_catalog_nbr_entry.grid(row=8, column=1, padx=10, pady=5)
-    self.course_catalog_nbr_entry.insert(0, course.catalog_nbr)
-
-    course_campus_label = customtkinter.CTkLabel(self.pop_window, text="Campus:")
-    course_campus_label.grid(row=9, column=0, padx=10, pady=5)
-
-    self.course_campus_entry = customtkinter.CTkEntry(self.pop_window, width=350)
-    self.course_campus_entry.grid(row=9, column=1, padx=10, pady=5)
-    self.course_campus_entry.insert(0, course.campus)
-
-    course_academic_organization_label = customtkinter.CTkLabel(
-      self.pop_window,
-      text="Academic Organization:"
-    )
-    course_academic_organization_label.grid(
-      row=10,
-      column=0,
-      padx=10,
-      pady=5
-    )
-
-    self.course_academic_organization_entry = customtkinter.CTkEntry(
-      self.pop_window,
-      width=350
-    )
-    self.course_academic_organization_entry.grid(
-      row=10,
-      column=1,
-      padx=10,
-      pady=5
-    )
-    self.course_academic_organization_entry.insert(0, course.academic_organization)
-
-    course_component_label = customtkinter.CTkLabel(self.pop_window, text="Component:")
-    course_component_label.grid(
-      row=11,
-      column=0,
-      padx=10,
-      pady=5
-    )
-
-    self.course_component_entry = customtkinter.CTkEntry(
-      self.pop_window,
-      width=350
-    )
-    self.course_component_entry.grid(
-      row=11,
-      column=1,
-      padx=10,
-      pady=5
-    )
-    self.course_component_entry.insert(0, course.component)
-
-    submit_button = customtkinter.CTkButton(
-      self.pop_window,
-      text="Update Course",
-      command=lambda: self._submit_edit_course(course),
-      width=350
-    )
-    submit_button.grid(
-      row=12,
-      columnspan=2,
-      sticky="nsew",
-      padx=10,
-      pady=5
-    )
-
-  @error_handler
-  def _add_course_form(self):
-    self.pop_window = customtkinter.CTkToplevel()
-    self.pop_window.grab_set()
-
-    self.pop_window.geometry("535x510")
-    self.pop_window.resizable(False, False)
-
-    self.pop_window.title("Add New Course")
-
-    course_id_label = customtkinter.CTkLabel(
-      self.pop_window,
-      text="Course ID:"
-    )
-    course_id_label.grid(
-      row=0,
-      column=0,
-      padx=10,
-      pady=5
-    )
-    self.course_id_entry = customtkinter.CTkEntry(
-      self.pop_window,
-      width=350
-    )
-    self.course_id_entry.grid(
-      row=0,
-      column=1,
-      padx=10,
-      pady=5
-    )
-
-    course_title_label = customtkinter.CTkLabel(
-      self.pop_window,
-      text="Title:"
-    )
-    course_title_label.grid(
-      row=1, 
-      column=0,
-      padx=10,
-      pady=5
-    )
-    self.course_title_entry = customtkinter.CTkEntry(
-      self.pop_window,
-      width=350
-    )
-    self.course_title_entry.grid(
-      row=1, 
-      column=1, 
-      padx=10, 
-      pady=5
+    self.course_title_entry.insert(
+      0,
+      course.title
     )
 
     course_credit_label = customtkinter.CTkLabel(
@@ -359,19 +192,23 @@ class Courses():
     course_credit_label.grid(
       row=2,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_credit_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_credit_entry.grid(
       row=2,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_credit_entry.insert(
+      0,
+      course.credit
     )
 
     course_maximum_units_label = customtkinter.CTkLabel(
@@ -381,19 +218,23 @@ class Courses():
     course_maximum_units_label.grid(
       row=3,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_maximum_units_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_maximum_units_entry.grid(
       row=3,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_maximum_units_entry.insert(
+      0,
+      course.maximum_units
     )
 
     course_long_title_label = customtkinter.CTkLabel(
@@ -403,19 +244,23 @@ class Courses():
     course_long_title_label.grid(
       row=4,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_long_title_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_long_title_entry.grid(
       row=4,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_long_title_entry.insert(
+      0,
+      course.long_course_title
     )
 
     course_offering_nbr_label = customtkinter.CTkLabel(
@@ -425,19 +270,23 @@ class Courses():
     course_offering_nbr_label.grid(
       row=5,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_offering_nbr_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_offering_nbr_entry.grid(
       row=5,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_offering_nbr_entry.insert(
+      0,
+      course.offering_nbr
     )
 
     course_academic_group_label = customtkinter.CTkLabel(
@@ -447,19 +296,23 @@ class Courses():
     course_academic_group_label.grid(
       row=6,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_academic_group_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_academic_group_entry.grid(
       row=6,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_academic_group_entry.insert(
+      0,
+      course.academic_group
     )
 
     course_subject_area_label = customtkinter.CTkLabel(
@@ -469,19 +322,23 @@ class Courses():
     course_subject_area_label.grid(
       row=7,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_subject_area_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_subject_area_entry.grid(
       row=7,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_subject_area_entry.insert(
+      0,
+      course.subject_area
     )
 
     course_catalog_nbr_label = customtkinter.CTkLabel(
@@ -491,19 +348,23 @@ class Courses():
     course_catalog_nbr_label.grid(
       row=8,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_catalog_nbr_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_catalog_nbr_entry.grid(
       row=8,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_catalog_nbr_entry.insert(
+      0,
+      course.catalog_nbr
     )
 
     course_campus_label = customtkinter.CTkLabel(
@@ -513,19 +374,23 @@ class Courses():
     course_campus_label.grid(
       row=9,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_campus_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_campus_entry.grid(
       row=9,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_campus_entry.insert(
+      0,
+      course.campus
     )
 
     course_academic_organization_label = customtkinter.CTkLabel(
@@ -535,20 +400,21 @@ class Courses():
     course_academic_organization_label.grid(
       row=10,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_academic_organization_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_academic_organization_entry.grid(
       row=10,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
     )
+    self.course_academic_organization_entry.insert(0, course.academic_organization)
 
     course_component_label = customtkinter.CTkLabel(
       self.pop_window,
@@ -557,34 +423,343 @@ class Courses():
     course_component_label.grid(
       row=11,
       column=0,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady,
+      sticky="w"
     )
-
     self.course_component_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.course_component_entry.grid(
       row=11,
       column=1,
-      padx=10,
-      pady=5
+      padx=padx,
+      pady=pady
+    )
+    self.course_component_entry.insert(
+      0,
+      course.component
+    )
+
+    submit_button = customtkinter.CTkButton(
+      self.pop_window,
+      text="Update Course",
+      width=entry_width,
+      command=lambda: self._submit_edit_course(course)
+    )
+    submit_button.grid(
+      row=12,
+      column=0,
+      columnspan=2,
+      padx=padx,
+      pady=pady,
+      sticky="ew"
+    )
+
+    self.pop_window.columnconfigure(1, weight=1)
+
+  def _add_course_form(self):
+    self.pop_window = customtkinter.CTkToplevel()
+    self.pop_window.grab_set()
+    self.pop_window.title("Add New Course")
+    self.pop_window.geometry("535x640")
+    self.pop_window.resizable(False, False)
+
+    entry_w, pad_x, pad_y = 350, 12, 8
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Course ID:",
+      anchor="w"
+    ).grid(
+      row=0,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_id_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_id_entry.grid(
+      row=0,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Title:",
+      anchor="w"
+    ).grid(
+      row=1,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_title_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_title_entry.grid(
+      row=1,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Credit:",
+      anchor="w"
+    ).grid(
+      row=2,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_credit_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_credit_entry.grid(
+      row=2,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Maximum Units:",
+      anchor="w"
+    ).grid(
+      row=3,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_maximum_units_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_maximum_units_entry.grid(
+      row=3,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Long Course Title:",
+      anchor="w"
+    ).grid(
+      row=4,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_long_title_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_long_title_entry.grid(
+      row=4,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Offering NBR:",
+      anchor="w"
+    ).grid(
+      row=5,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_offering_nbr_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_offering_nbr_entry.grid(
+      row=5,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Academic Group:",
+      anchor="w"
+    ).grid(
+      row=6,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_academic_group_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_academic_group_entry.grid(
+      row=6,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Subject Area:",
+      anchor="w"
+    ).grid(
+      row=7,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_subject_area_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_subject_area_entry.grid(
+      row=7,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Catalog NBR:",
+      anchor="w"
+    ).grid(
+      row=8,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_catalog_nbr_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_catalog_nbr_entry.grid(
+      row=8,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Campus:",
+      anchor="w"
+    ).grid(
+      row=9,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_campus_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_campus_entry.grid(
+      row=9,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Academic Organization:",
+      anchor="w"
+    ).grid(
+      row=10,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_academic_organization_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_academic_organization_entry.grid(
+      row=10,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Component:",
+      anchor="w"
+    ).grid(
+      row=11,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.course_component_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_w
+    )
+    self.course_component_entry.grid(
+      row=11,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
     )
 
     submit_button = customtkinter.CTkButton(
       self.pop_window,
       text="Save Course",
-      command=self._submit_new_course,
-      width=350
+      width=entry_w,
+      command=self._submit_new_course
     )
     submit_button.grid(
       row=12,
+      column=0,
       columnspan=2,
-      sticky="nsew",
-      padx=10,
-      pady=5
+      padx=pad_x,
+      pady=pad_y + 4,
+      sticky="ew"
     )
+
+    self.pop_window.columnconfigure(1, weight=1)
 
   # --------------------
   # table functions
@@ -631,6 +806,20 @@ class Courses():
     )
     self.courses_rows.append(lectures_button)
 
+    edit_button = customtkinter.CTkButton(
+      self.courses_table_frame,
+      text="Edit",
+      command=lambda: self._config.executor.submit(self._edit_course_form, course)
+    )
+    edit_button.grid(
+      row=row,
+      column=13,
+      sticky="nsew",
+      padx=10,
+      pady=5
+    )
+    self.courses_rows.append(edit_button)
+
     delete_button = customtkinter.CTkButton(
       self.courses_table_frame,
       text="Delete",
@@ -638,20 +827,6 @@ class Courses():
       command=lambda: self._config.executor.submit(self._delete_course, course)
     )
     delete_button.grid(
-      row=row,
-      column=13,
-      sticky="nsew",
-      padx=10,
-      pady=5
-    )
-    self.courses_rows.append(delete_button)
-
-    edit_button = customtkinter.CTkButton(
-      self.courses_table_frame,
-      text="Edit",
-      command=lambda: self._config.executor.submit(self._edit_course_form, course)
-    )
-    edit_button.grid(
       row=row,
       column=14,
       sticky="nsew",

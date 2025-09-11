@@ -46,7 +46,7 @@ def update_user(user_object: User) -> None:
 		)
 
 @error_handler
-def get_users() -> list:
+def fetch_users() -> list:
 	response = requests.get(CONFIGRATIONS.get_backend_endpoint() + "/users/get_all", timeout=5).content
 	response = json.loads(response.decode('utf-8'))
 

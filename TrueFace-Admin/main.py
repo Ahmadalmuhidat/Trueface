@@ -10,7 +10,7 @@ from app.views.users import Users
 from app.views.login import Login
 from app.controllers.courses import get_courses
 from app.controllers.students import get_students
-from app.controllers.users import get_users
+from app.controllers.users import fetch_users
 from app.helper.error_handler import error_handler
 
 customtkinter.set_appearance_mode("dark")
@@ -22,7 +22,7 @@ class Main():
 
     get_courses()
     get_students()
-    get_users()
+    fetch_users()
 
   @error_handler
   def create_navbar(self):

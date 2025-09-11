@@ -3,7 +3,7 @@ import customtkinter
 from app.interfaces.user import User
 from app.config.context import Context
 from app.config.configrations import Configrations
-from app.controllers.users import get_users, add_user, remove_user, update_user
+from app.controllers.users import fetch_users, add_user, remove_user, update_user
 from app.helper.error_handler import error_handler
 
 class Users():
@@ -29,8 +29,8 @@ class Users():
     self._config.loading_cursor_on()
     remove_user(user)
     self.users = self._context.get_users()
-    self._config.loading_cursor_off()
     self._refresh_users_table()
+    self._config.loading_cursor_off()
 
   def _search_user(self, term):
     self.users = list(filter(lambda user: term in user.name, self.users))
@@ -72,92 +72,122 @@ class Users():
     self._config.loading_cursor_off()
 
   def _refresh_users_table(self):
-    get_users()
+    fetch_users()
     self._display_users_table()
 
   # --------------------
   # forms
   # --------------------
 
-  @error_handler
   def _edit_user_form(self, user: User):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
-
-    self.pop_window.geometry("460x350")
-    self.pop_window.resizable(False, False)
     self.pop_window.title("Edit User")
+    self.pop_window.geometry("420x300")
+    self.pop_window.resizable(False, False)
 
-    user_id_label = customtkinter.CTkLabel(self.pop_window, text="User ID:")
-    user_id_label.grid(
+    entry_width = 300
+    padding_x = 15
+    padding_y = 10
+
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="User ID:",
+      anchor="w"
+    ).grid(
       row=0,
       column=0,
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=padding_y,
+      sticky="w"
     )
 
-    self.user_id_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.user_id_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
     self.user_id_entry.grid(
       row=0,
       column=1,
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=padding_y,
+      sticky="ew"
     )
     self.user_id_entry.insert(0, user.user_id)
     self.user_id_entry.configure(state="readonly")
 
-    user_full_name_label = customtkinter.CTkLabel(self.pop_window, text="Full Name:")
-    user_full_name_label.grid(
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Full Name:",
+      anchor="w"
+    ).grid(
       row=1,
       column=0,
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=padding_y,
+      sticky="w"
     )
 
-    self.user_full_name_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.user_full_name_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
     self.user_full_name_entry.grid(
       row=1,
       column=1,
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=padding_y,
+      sticky="ew"
     )
     self.user_full_name_entry.insert(0, user.name)
 
-    user_email_label = customtkinter.CTkLabel(self.pop_window, text="Email:")
-    user_email_label.grid(
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Email:",
+      anchor="w"
+    ).grid(
       row=2,
       column=0,
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=padding_y,
+      sticky="w"
     )
 
-    self.user_email_entry = customtkinter.CTkEntry(self.pop_window, width=350)
+    self.user_email_entry = customtkinter.CTkEntry(
+      self.pop_window,
+      width=entry_width
+    )
     self.user_email_entry.grid(
       row=2,
       column=1,
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=padding_y,
+      sticky="ew"
     )
     self.user_email_entry.insert(0, user.email)
 
-    user_role_label = customtkinter.CTkLabel(self.pop_window, text="Role:")
-    user_role_label.grid(
-      row=4,
+    customtkinter.CTkLabel(
+      self.pop_window,
+      text="Role:",
+      anchor="w"
+    ).grid(
+      row=3,
       column=0,
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=padding_y,
+      sticky="w"
     )
 
     self.user_role_entry = customtkinter.CTkComboBox(
       self.pop_window,
       values=["Admin", "Teacher"],
-      width=350
+      width=entry_width
     )
     self.user_role_entry.grid(
-      row=4,
+      row=3,
       column=1,
-      padx=10,
-      pady=15
+      padx=padding_x, pady=padding_y,
+      sticky="ew"
     )
     self.user_role_entry.set(user.role)
 
@@ -165,112 +195,124 @@ class Users():
       self.pop_window,
       text="Update User",
       command=lambda: self._submit_edit_user(user),
-      width=350
+      width=entry_width
     )
     submit_button.grid(
-      row=7,
+      row=4,
+      column=0,
       columnspan=2,
-      sticky="nsew",
-      padx=10,
-      pady=15
+      padx=padding_x,
+      pady=(padding_y + 5),
+      sticky="ew"
     )
 
-  @error_handler
+    self.pop_window.columnconfigure(1, weight=1)
+
   def _add_user_form(self):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
-
-    self.pop_window.geometry("460x350")
-    self.pop_window.resizable(False, False)
     self.pop_window.title("Add New User")
+    self.pop_window.geometry("420x300")
+    self.pop_window.resizable(False, False)
 
-    user_id_label = customtkinter.CTkLabel(
+    entry_width = 300
+    pad_x = 15
+    pad_y = 10
+
+    customtkinter.CTkLabel(
       self.pop_window,
-      text="User ID:"
-    )
-    user_id_label.grid(
+      text="User ID:",
+      anchor="w"
+    ).grid(
       row=0,
       column=0,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
     )
 
     self.user_id_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.user_id_entry.grid(
       row=0,
       column=1,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
     )
 
-    user_full_name_label = customtkinter.CTkLabel(
+    customtkinter.CTkLabel(
       self.pop_window,
-      text="First Name:"
-    )
-    user_full_name_label.grid(
+      text="First Name:",
+      anchor="w"
+    ).grid(
       row=1,
       column=0,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
     )
 
     self.user_full_name_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.user_full_name_entry.grid(
       row=1,
       column=1,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
     )
 
-    user_email_label = customtkinter.CTkLabel(
+    customtkinter.CTkLabel(
       self.pop_window,
-      text="Email:"
-    )
-    user_email_label.grid(
+      text="Email:",
+      anchor="w"
+    ).grid(
       row=2,
       column=0,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
     )
 
     self.user_email_entry = customtkinter.CTkEntry(
       self.pop_window,
-      width=350
+      width=entry_width
     )
     self.user_email_entry.grid(
       row=2,
       column=1,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
     )
 
-    user_role_label = customtkinter.CTkLabel(
+    customtkinter.CTkLabel(
       self.pop_window,
-      text="Role:"
-    )
-    user_role_label.grid(
-      row=4,
+      text="Role:",
+      anchor="w"
+    ).grid(row=3,
       column=0,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
     )
 
     self.user_role_entry = customtkinter.CTkComboBox(
       self.pop_window,
       values=["Admin", "Teacher"],
-      width=350
+      width=entry_width
     )
     self.user_role_entry.grid(
-      row=4,
+      row=3,
       column=1,
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
     )
     self.user_role_entry.set("Teacher")
 
@@ -278,15 +320,18 @@ class Users():
       self.pop_window,
       text="Save User",
       command=self._submit_new_user,
-      width=350
+      width=entry_width
     )
     submit_button.grid(
-      row=7,
+      row=4,
+      column=0,
       columnspan=2,
-      sticky="nsew",
-      padx=10,
-      pady=15
+      padx=pad_x,
+      pady=(pad_y + 5),
+      sticky="ew"
     )
+
+    self.pop_window.columnconfigure(1, weight=1)
 
   # --------------------
   # table functions
@@ -311,6 +356,20 @@ class Users():
       user_data.grid(row=row, column=col, sticky="nsew")
       self.users_rows.append(user_data)
 
+    edit_button = customtkinter.CTkButton(
+      self.users_table_frame,
+      text="Edit",
+      command=lambda: self._config.executor.submit(self._edit_user_form, user)
+    )
+    edit_button.grid(
+      row=row,
+      column=4,
+      sticky="nsew",
+      padx=10,
+      pady=5
+    )
+    self.users_rows.append(edit_button)
+
     delete_button = customtkinter.CTkButton(
       self.users_table_frame,
       text="Delete",
@@ -318,20 +377,6 @@ class Users():
       command=lambda: self._config.executor.submit(self._delete_user, user)
     )
     delete_button.grid(
-      row=row,
-      column=4,
-      sticky="nsew",
-      padx=10,
-      pady=5
-    )
-    self.users_rows.append(delete_button)
-
-    edit_button = customtkinter.CTkButton(
-      self.users_table_frame,
-      text="Edit",
-      command=lambda: self._config.executor.submit(self._edit_user_form, user)
-    )
-    edit_button.grid(
       row=row,
       column=5,
       sticky="nsew",
