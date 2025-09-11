@@ -1,12 +1,12 @@
 import json
 import requests
 
-from CTkMessagebox import CTkMessagebox
-from app.config.context import Context
+from app.helper.alerts_manager import AlertsManager
 from app.config.configrations import Configrations
 from app.helper.error_handler import error_handler
 
 CONFIGRATIONS = Configrations()
+ALERTSMANAGER = AlertsManager()
 
 @error_handler
 def login(email, password) -> str:
@@ -25,12 +25,7 @@ def login(email, password) -> str:
   if response.get("status_code") == 200:
     return response.get("data")
   else:
-    title = "Error"
     message = response.get("error")
-    icon = "cancel"
-    CTkMessagebox(
-      title=title,
+    ALERTSMANAGER.error(
       message=message if message else "Something went wrong while checking user info",
-      icon=icon
     )
-

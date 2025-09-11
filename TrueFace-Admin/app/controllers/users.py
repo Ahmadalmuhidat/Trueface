@@ -1,7 +1,7 @@
 import json
 import requests
 
-from CTkMessagebox import CTkMessagebox
+from app.helper.alerts_manager import AlertsManager
 from app.interfaces.user import User
 from app.config.context import Context
 from app.config.configrations import Configrations
@@ -9,6 +9,7 @@ from app.helper.error_handler import error_handler
 
 CONTEXT = Context()
 CONFIGRATIONS = Configrations()
+ALERTSMANAGER = AlertsManager()
 
 @error_handler
 def update_user(user_object: User) -> None:
@@ -27,23 +28,10 @@ def update_user(user_object: User) -> None:
 	response = json.loads(response.decode('utf-8'))
 
 	if response.get("status_code") == 200:
-		title = "Success"
-		message = "User has been updated successfully"
-		icon = "check"
-		CTkMessagebox(
-			title=title,
-			message=message,
-			icon=icon
-		)
+		ALERTSMANAGER.success("User has been updated successfully")
 	else:
-		title = "Error"
 		message = response.get("error")
-		icon = "cancel"
-		CTkMessagebox(
-			title=title,
-			message=message if message else "Something went wrong while updating the user",
-			icon=icon
-		)
+		ALERTSMANAGER.error(message if message else "Something went wrong while updating the user")
 
 @error_handler
 def fetch_users() -> list:
@@ -53,14 +41,8 @@ def fetch_users() -> list:
 	if response.get("status_code") == 200:
 		CONTEXT.set_users(response.get("data"))
 	else:
-		title = "Error"
 		message = response.get("error")
-		icon = "cancel"
-		CTkMessagebox(
-			title = title,
-			message = message if message else "Something went wrong while getting the users",
-			icon = icon
-		)
+		ALERTSMANAGER.error(message if message else "Something went wrong while getting the users")
 
 @error_handler
 def add_user(user_object: User) -> None:
@@ -78,38 +60,15 @@ def add_user(user_object: User) -> None:
 	response = json.loads(response.decode('utf-8'))
 
 	if response.get("status_code") == 200:
-		title="Success"
-		message="New user has been added"
-		icon="check"
-		CTkMessagebox(
-			title = title,
-			message = message,
-			icon = icon
-		)
+		ALERTSMANAGER.success("New user has been added")
 	else:
-		title = "Error"
 		message = response.get("error")
-		icon = "cancel"
-		CTkMessagebox(
-			title = title,
-			message = message if message else "Something went wrong while inserting the user",
-			icon = icon
-		)
+		ALERTSMANAGER.error(message if message else "Something went wrong while inserting the user")
 
 @error_handler
 def remove_user(user_object: User) -> None:
-	title = "Conformation"
-	message = "Are you sure you want to delete the user"
-	icon = "question"
-	conformation = CTkMessagebox(
-		title = title,
-		message = message,
-		icon = icon,
-		option_1 = "yes",
-		option_2 = "cancel" 
-	)
-
-	if conformation.get() == "yes":
+	conformation = ALERTSMANAGER.options("Are you sure you want to delete the user")
+	if conformation:
 		data = {
 			"user_id": user_object.user_id,
 		}
@@ -121,16 +80,7 @@ def remove_user(user_object: User) -> None:
 		response = json.loads(response.decode('utf-8'))
 
 		if response.get("status_code") == 200:
-			title="Success"
-			message="User has been removed"
-			icon="check"
-			CTkMessagebox(title=title, message=message,icon=icon)
+			ALERTSMANAGER.success("User has been removed")
 		else:
-			title = "Error"
 			message = response.get("error")
-			icon = "cancel"
-			CTkMessagebox(
-				title = title,
-				message = message if message else "Something went wrong while removing the user",
-				icon = icon
-			)
+			ALERTSMANAGER.error(message if message else "Something went wrong while removing the user")

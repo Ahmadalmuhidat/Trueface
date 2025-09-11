@@ -1,14 +1,15 @@
 import json
 import requests
 
-from CTkMessagebox import CTkMessagebox
 from app.interfaces.course import Course
 from app.config.context import Context
 from app.config.configrations import Configrations
 from app.helper.error_handler import error_handler
+from app.helper.alerts_manager import AlertsManager
 
 CONTEXT = Context()
 CONFIGRATIONS = Configrations()
+ALERTSMANAGER = AlertsManager()
 
 @error_handler
 def get_courses() -> list:
@@ -18,14 +19,8 @@ def get_courses() -> list:
   if response.get("status_code") == 200:
     CONTEXT.set_courses(response.get("data"))
   else:
-    title = "Error"
     message = response.get("error")
-    icon = "cancel"
-    CTkMessagebox(
-      title = title,
-      message = message if message else "Something went wrong while getting the courses",
-      icon = icon
-    )
+    ALERTSMANAGER.error(message if message else "Something went wrong while getting the courses",)
 
 @error_handler
 def update_course(course_object: Course) -> None:
@@ -52,19 +47,11 @@ def update_course(course_object: Course) -> None:
   response = json.loads(response.decode('utf-8'))
 
   if response.get("status_code") == 200:
-    title = "Success"
     message = "Course has been updated"
-    icon = "check"
-    CTkMessagebox(title=title, message=message, icon=icon)
+    ALERTSMANAGER.success(message)
   else:
-    title = "Error"
     message = response.get("error")
-    icon = "cancel"
-    CTkMessagebox(
-      title=title,
-      message=message if message else "Something went wrong while updating the course",
-      icon=icon
-    )
+    ALERTSMANAGER.error(message if message else "Something went wrong while updating the courses",)
 
 @error_handler
 def add_course(course_object: Course) -> None:
@@ -92,29 +79,13 @@ def add_course(course_object: Course) -> None:
   if response.get("status_code") == 200:
     return response.get("data")
   else:
-    title = "Error"
     message = response.get("error")
-    icon = "cancel"
-    CTkMessagebox(
-      title = title,
-      message = message if message else "Something went wrong while inserting the course",
-      icon = icon
-    )
+    ALERTSMANAGER.error(message if message else "Something went wrong while inserting the course")
 
 @error_handler
 def remove_course(course_object: Course) -> None:
-  title = "Conformation"
-  message = "Are you sure you want to delete the course"
-  icon = "question"
-  conformation = CTkMessagebox(
-    title = title,
-    message = message,
-    icon = icon,
-    option_1 = "yes",
-    option_2 = "cancel" 
-  )
-
-  if conformation.get() == "yes":
+  conformation = ALERTSMANAGER.options("Are you sure you want to delete the course")
+  if conformation:
     data = {
       "course_id": course_object.course_id
     }
@@ -127,19 +98,11 @@ def remove_course(course_object: Course) -> None:
 
     if response.get("status_code") == 200:
       if response.get("data"):
-        title = "Success"
         message = "Course has been deleted"
-        icon = "check"
-        CTkMessagebox(title=title, message=message,icon=icon)
+        ALERTSMANAGER.success(message)
     else:
-      title = "Error"
       message = response.get("error")
-      icon = "cancel"
-      CTkMessagebox(
-        title = title,
-        message = message if message else "Something went wrong while removing the course",
-        icon = icon
-      )
+      ALERTSMANAGER.error(message if message else "Something went wrong while removing the course")
 
 @error_handler
 def get_lectures_by_course(course_object: Course) -> list:
@@ -156,11 +119,5 @@ def get_lectures_by_course(course_object: Course) -> list:
   if response.get("status_code") == 200:
     return response.get("data")
   else:
-    title = "Error"
     message = response.get("error")
-    icon = "cancel"
-    CTkMessagebox(
-      title=title,
-      message=message if message else "Something went wrong while getting the lectures",
-      icon=icon
-    )
+    ALERTSMANAGER.error(message if message else "Something went wrong while getting the lectures")
