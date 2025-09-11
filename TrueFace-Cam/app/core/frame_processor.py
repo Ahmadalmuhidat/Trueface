@@ -24,11 +24,7 @@ class FrameProcessor:
   @error_handler
   def start(self, current_camera_index):
     if not self._context.get_current_lecture():
-      self._alert.pop_window(
-        "Error",
-        "Please select a class from the settings",
-        "info"
-      )
+      self._alert.info("Please select a class from the settings")
       return
 
     self._capture_thread_id = self._config.frame_processing_executor.submit(

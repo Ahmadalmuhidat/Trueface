@@ -11,7 +11,6 @@ import app.views.students as Students
 from app.config.configrations import Configrations
 from app.core.camera_manager import CameraManager
 from app.config.router import Router
-from app.helper.logger import Logger
 from app.helper.alerts_manager import AlertsManager
 from app.helper.error_handler import error_handler
 
@@ -22,7 +21,6 @@ class Main:
     self._config = Configrations()
     self._camera_manager = CameraManager()
     self._router = Router()
-    self._logger = Logger()
     self._alert = AlertsManager()
 
     self.window = None
@@ -50,7 +48,7 @@ class Main:
   @error_handler
   def when_app_close(self):
     if self._camera_manager.get_capturing_is_active():
-      self._alert.pop_window("Error", "Please stop the camera first", "cancel")
+      self._alert.error("Please stop the camera first")
       return
 
     self._config.shutdown_event.set()

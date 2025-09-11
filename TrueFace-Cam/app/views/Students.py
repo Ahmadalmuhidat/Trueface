@@ -30,11 +30,7 @@ class Students():
   @error_handler
   def _refresh(self):
     if not self._context.get_current_lecture():
-      self._alert.pop_window(
-        "Error",
-        "Please select a class from the settings",
-        "cancel"
-      )
+      self._alert.error("Please select a class from the settings")
       return
 
     self._config.frame_processing_executor.submit(self._display_students_table)
@@ -82,11 +78,7 @@ class Students():
       for row, student in enumerate(self._context.get_students(), start=1):
         self._add_row(student, row)
     else:
-      self._alert.pop_window(
-        "No Student Available",
-        "Please select a lecture from the setting page",
-        "cancel"
-      )
+      self._alert.error("Please select a lecture from the setting page")
 
   # --------------------
   # view entry

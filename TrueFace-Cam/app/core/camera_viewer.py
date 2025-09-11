@@ -1,4 +1,3 @@
-from app.helper.logger import Logger
 from app.helper.alerts_manager import AlertsManager
 from app.helper.error_handler import error_handler
 
@@ -12,8 +11,4 @@ class CameraViewer:
     if camera:
       camera.view_stream()
     else:
-      self._alert.pop_window(
-        "No Camera Selected",
-        "Please select camera before testing",
-        "info"
-      )
+      self._alert.info("Please select camera before testing")

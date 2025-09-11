@@ -59,20 +59,12 @@ class Settings():
     finally:
       self._config.loading_cursor_off()
 
-    self._alert.pop_window(
-      "Info",
-      "Lecture has been updated",
-      "check"
-    )
+    self._alert.success("Lecture has been updated")
 
   @error_handler
   def _update_current_camera(self, user_camera_selection):
     self._camera_manager.set_current_camera(self.cameras_key_map.get(user_camera_selection))
-    self._alert.pop_window(
-      "Info",
-      "Camera has been updated",
-      "check"
-    )
+    self._alert.success("Camera has been updated")
 
   @error_handler
   def _check_api_health(self):
@@ -85,46 +77,22 @@ class Settings():
         try:
           api_active = response.json()
           if api_active.get("data"):
-            self._alert.pop_window(
-              "Backend Endpoint Status",
-              f"{self.server_api_entry.get()} is working fine",
-              "check"
-            )
+            self._alert.success(f"{self.server_api_entry.get()} is working fine")
           else:
-            self._alert.pop_window(
-              "Backend Endpoint Status",
-              f"{self.server_api_entry.get()} does not work",
-              "cancel"
-            )
+            self._alert.error(f"{self.server_api_entry.get()} does not work")
             self._config.set_backend_ip_address(original)
         except json.JSONDecodeError:
-          self._alert.pop_window(
-            "Backend Endpoint Status",
-            f"Invalid response from {self.server_api_entry.get()}",
-            "cancel"
-          )
+          self._alert.error(f"Invalid response from {self.server_api_entry.get()}")
           self._config.set_backend_ip_address(original)
       else:
-        self._alert.pop_window(
-          "Backend Endpoint Status",
-          f"{self.server_api_entry.get()} returned status {response.status_code}",
-          "cancel"
-        )
+        self._alert.error(f"{self.server_api_entry.get()} returned status {response.status_code}")
         self._config.set_backend_ip_address(original)
     
     except Timeout:
-      self._alert.pop_window(
-        "Backend Endpoint Status",
-        f"{self.server_api_entry.get()} did not respond in time",
-        "cancel"
-      )
+      self._alert.error(f"{self.server_api_entry.get()} did not respond in time")
       self._config.set_backend_ip_address(original)
     except RequestException as e:
-      self._alert.pop_window(
-        "Backend Endpoint Status",
-        f"An error occurred: {str(e)}",
-        "cancel"
-      )
+      self._alert.error(f"An error occurred: {str(e)}")
       self._config.set_backend_ip_address(original)
 
   # --------------------

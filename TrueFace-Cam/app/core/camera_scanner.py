@@ -23,11 +23,10 @@ class CameraScanner:
         found_any = True
     self.found_active_connected_camera = found_any
 
-    self._alert.pop_window(
-      "Scanning Status",
-      "Done Scanning Connecetd cameras" if found_any else "Did not find any connected camera",
-      "check" if found_any else "warning"
-    )
+    if found_any:
+      self._alert.success("Done Scanning Connecetd cameras")
+    else:
+      self._alert.warrning("Did not find any connected camera")
 
   def get_available_cameras(self) -> List[Camera]:
     return self._available_cameras

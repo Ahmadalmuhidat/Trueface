@@ -52,19 +52,11 @@ class CameraManager:
   @error_handler
   def view_current_camera_stream(self):
     if not self.camera_scanner.found_active_connected_camera:
-      self._alert.pop_window(
-        "Not Allowed",
-        "Please make sure you connected at least one camera",
-        "cancel"
-      )
+      self._alert.error("Please make sure you connected at least one camera")
       return
 
     if self.get_capturing_is_active():
-      self._alert.pop_window(
-        "Not Allowed",
-        "Please make sure the camera is not already operating",
-        "cancel"
-      )
+      self._alert.error("Please make sure the camera is not already operating")
       return
 
     self.camera_viewer.view_camera(self._current_camera_index, self.camera_scanner._available_cameras)
@@ -72,19 +64,11 @@ class CameraManager:
   @error_handler
   def start_capturing(self):
     if self.get_capturing_is_active():
-      self._alert.pop_window(
-        "Not Allowed",
-        "Please make sure the camera is not already operating",
-        "info"
-      )
+      self._alert.info("Please make sure the camera is not already operating")
       return
 
     if not self.camera_scanner.found_active_connected_camera:
-      self._alert.pop_window(
-        "Error",
-        "Failed to find active cameras",
-        "cancel"
-      )
+      self._alert.error("Failed to find active cameras")
       return
 
     self.set_capturing_is_active(True)
@@ -94,11 +78,7 @@ class CameraManager:
   @error_handler
   def stop_capturing(self):
     if not self.get_capturing_is_active():
-      self._alert.pop_window(
-        "Action Failed",
-        "Camera is not capturing",
-        "cancel"
-      )
+      self._alert.error("Camera is not capturing")
       return
     
     self.set_capturing_is_active(False)

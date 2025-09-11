@@ -1,7 +1,6 @@
 import customtkinter
 
 from app.config.configrations import Configrations
-from app.helper.logger import Logger
 from app.helper.error_handler import error_handler
 
 class Router:
@@ -21,7 +20,6 @@ class Router:
     # private
     self._current_view = None
     self._config = Configrations()
-    self._logger = Logger()
 
   @error_handler
   def clear_window(self):
