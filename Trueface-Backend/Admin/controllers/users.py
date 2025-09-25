@@ -1,32 +1,25 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+from django.core.cache import cache
 from datetime import datetime, timedelta
-from ..utils.database import Database
+from ..models import User, Class, Attendance, ClassStudentRelation
 from ..helper import json_web_token, password, mailer
+from ..utils.cache import cache_result, cache_invalidate
 
 @csrf_exempt
 def InsertUser(request):
   if request.method == "POST":
     generated_password = password.generate_password()
-    data = [
-      request.POST.get("user_id"),
-      request.POST.get("name"),
-      request.POST.get("email"),
-      generated_password,
-      request.POST.get("role")
-    ]
-    query = '''
-      INSERT INTO
-        Users
-      VALUES
-      (
-        %s,
-        %s,
-        %s,
-        %s,
-        %s
-      )
-    '''
+    
+    User.objects.create(
+      id=request.POST.get("user_id"),
+      name=request.POST.get("name"),
+      email=request.POST.get("email"),
+      password=generated_password,
+      role=request.POST.get("role")
+    )
+    
     # mailer.SendGeneratedPasswordMail(
     #   generated_password,
     #   [request.POST.get("email")]
@@ -34,15 +27,11 @@ def InsertUser(request):
 
     return JsonResponse({
       "status_code": 200,
-      "data": Database.ExecutePostQuery(query, data)
+      "data": True
     })
   return JsonResponse({
     "error": "Method not allowed"
   }, status=405)
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from ..utils.database import Database
 
 @csrf_exempt
 def UpdateUser(request):
@@ -53,20 +42,17 @@ def UpdateUser(request):
       email = request.POST.get("email")
       role = request.POST.get("role")
 
-      query = '''
-        UPDATE Users
-        SET
-          Name = %s,
-          Email = %s,
-          Role = %s
-        WHERE ID = %s
-      '''
-      data = (name, email, role, user_id)
-      updated = Database.ExecutePostQuery(query, data)
+      try:
+        user = User.objects.get(id=user_id)
+        user.name = name
+        user.email = email
+        user.role = role
+        user.save()
 
-      if updated:
+        cache_invalidate("users_list")
+        
         return JsonResponse({"status_code": 200, "data": True})
-      else:
+      except User.DoesNotExist:
         return JsonResponse({"error": "User not found or nothing to update"}, status=404)
     except Exception as e:
       return JsonResponse({"error": str(e)}, status=500)
@@ -76,49 +62,66 @@ def UpdateUser(request):
 @csrf_exempt
 def GetUsers(request):
   if request.method == "GET":
-    query = '''
-      SELECT
-        ID,
-        Name,
-        Email,
-        Role
-      FROM
-        Users
-    '''
-    return JsonResponse({
-      "status_code": 200,
-      "data": Database.ExecuteGetQuery(query)
-    })
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 50))
+    offset = (page - 1) * page_size
+    
+    cache_key = f"users_list_{page}_{page_size}"
+    cached_result = cache.get(cache_key)
+    
+    if cached_result is None:
+      users = User.objects.all().values('id', 'name', 'email', 'role')[offset:offset + page_size]
+      total_count = User.objects.count()
+      
+      result = {
+        "status_code": 200,
+        "data": list(users),
+        "pagination": {
+          "page": page,
+          "page_size": page_size,
+          "total_count": total_count,
+          "total_pages": (total_count + page_size - 1) // page_size
+        }
+      }
+      cache.set(cache_key, result, 300)
+      return JsonResponse(result)
+    else:
+      return JsonResponse(cached_result)
   return JsonResponse({
     "error": "Method not allowed"
   }, status=405)
 
 @csrf_exempt
+@transaction.atomic
 def RemoveUser(request):
   if request.method == "POST":
-    user_id = request.POST.get("user_id")
-    data = [user_id]
+    try:
+      user_id = request.POST.get("user_id")
 
-    delete_user_query = 'DELETE FROM Users WHERE ID = %s'
-    remove = Database.ExecutePostQuery(delete_user_query, data)
+      try:
+        user = User.objects.get(id=user_id)
+        classes = Class.objects.filter(instructor=user)
+        
+        for class_obj in classes:
+          Attendance.objects.filter(class_field=class_obj).delete()
+        
+        for class_obj in classes:
+          ClassStudentRelation.objects.filter(class_field=class_obj).delete()
+        
+        classes.delete()
+        user.delete()
 
-    if remove:
-      delete_classes_query = '''
-        DELETE FROM
-          Classes
-        WHERE
-          Instructor = %s
-      '''
-      Database.ExecutePostQuery(delete_classes_query, data)
-      return JsonResponse({
-        "status_code": 200,
-        "data": True
-      })
-    else:
-      return JsonResponse({
-        "status_code": 500,
-        "error": "Something went wrong while deleting the student"
-      })
+        return JsonResponse({
+          "status_code": 200,
+          "data": True
+        })
+      except User.DoesNotExist:
+        return JsonResponse({
+          "status_code": 404,
+          "error": "User not found or already deleted"
+        })
+    except Exception as e:
+      return JsonResponse({"error": str(e)}, status=500)
   return JsonResponse({
     "error": "Method not allowed"
   }, status=405)
@@ -128,24 +131,14 @@ def login(request):
   if request.method == "GET":
     email = request.GET.get("email")
     password = request.GET.get("password")
-    data = (email,)
-    query = '''
-      SELECT
-        ID,
-        Password,
-        Role
-      FROM
-        Users
-      WHERE
-        Email = %s
-    '''
-    user = Database.ExecuteGetQuery(query, data)
-
-    if len(user) == 1:
-      if str(user[0]['Password']) == str(password):
+    
+    try:
+      user = User.objects.get(email=email)
+      
+      if str(user.password) == str(password):
         payload = {
-          'user_id': user[0]['ID'],
-          'role': user[0]['Role'],
+          'user_id': user.id,
+          'role': user.role,
           'exp': datetime.utcnow() + timedelta(hours=24)
         }
         return JsonResponse({
@@ -157,7 +150,7 @@ def login(request):
           "status_code": 500,
           "error": "Password incorrect"
         })
-    else:
+    except User.DoesNotExist:
       return JsonResponse({
         "status_code": 500,
         "error": "User was not found"
