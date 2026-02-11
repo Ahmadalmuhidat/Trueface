@@ -1,4 +1,4 @@
 class Instructor:
-  def __init__(self, instructor_id, name):
-    self.instructor_id = instructor_id
+  def __init__(self, id: str, name: str) -> None:
+    self.id = id
     self.name = name

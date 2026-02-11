@@ -1,41 +1,54 @@
 import face_recognition
 import winsound
-import numpy as np
+import numpy
 
+from typing import List, Tuple
 from threading import Lock, Thread
 from sklearn.neighbors import KDTree
-
 from app.config.context import Context
 from app.interfaces.student import Student
-from app.controllers.attendance import insert_attendance
-from app.helper.error_handler import error_handler
+from app.controllers.attendance import AttendanceController
+from app.utils.error_handler import error_handler
 from app.interfaces.recognizer import Recognizer
 
 class KD_Tree_Module(Recognizer):
   def __init__(self) -> None:
     super().__init__()
+    from app.config.configurations import Configurations
 
-    from app.config.configrations import Configrations
+    self.attendace_controller = AttendanceController()
 
     self._context = Context()
-    self._config = Configrations()
+    self._config = Configurations()
     self._scan_lock = Lock()
 
-    # KD-Tree related
     self._kd_tree = None
     self._student_encodings = None
     self._tolerance = 0.5
+    self._tree_built = False
+    self._last_student_count = 0
 
-  def _build_kd_tree(self):
+  def _build_kd_tree(self) -> None:
     students = self._context.get_students()
     if not students:
       return
 
-    self._student_encodings = np.array([student.get_face_encode() for student in students])
+    self._student_encodings = numpy.array([student.get_face_encode() for student in students])
     self._kd_tree = KDTree(self._student_encodings)
+    self._tree_built = True
+    self._last_student_count = len(students)
+  
+  def _ensure_tree_built(self) -> None:
+    current_students = self._context.get_students()
+    current_count = len(current_students)
+    
+    if not self._tree_built or current_count != self._last_student_count:
+      self._build_kd_tree()
 
   @error_handler
-  def analyze_camera_stream(self, frame) -> bool:
+  def process_camera_stream(self, frame: numpy.ndarray) -> None:
+    self._ensure_tree_built()
+    
     face_locations = self._detect_faces(frame)
     if not face_locations or self._kd_tree is None:
       return
@@ -46,24 +59,23 @@ class KD_Tree_Module(Recognizer):
       self._process_matches(matches)
 
   @error_handler
-  def _detect_faces(self, frame):
+  def _detect_faces(self, frame: numpy.ndarray) -> List[Tuple[int, int, int, int]]:
     model = "hog" if self._config.get_processing_mode() == "CPU" else "cnn"
     return face_recognition.face_locations(frame, model=model)
 
-  def _get_known_encodings(self):
+  def _get_known_encodings(self) -> List[numpy.ndarray]:
     return self._student_encodings
 
   @error_handler
-  def _encode_faces(self, frame, face_locations):
+  def _encode_faces(self, frame: numpy.ndarray, face_locations: List[Tuple[int, int, int, int]]) -> List[numpy.ndarray]:
     return face_recognition.face_encodings(frame, face_locations)
 
   @error_handler
-  def _compare_faces(self, known_encodings, cam_face_encoding):
+  def _compare_faces(self, known_encodings: List[numpy.ndarray], cam_face_encoding: numpy.ndarray) -> List[bool]:
     distances, indices = self._kd_tree.query([cam_face_encoding], k=1)
     nearest_idx = indices[0][0]
     distance = distances[0][0]
 
-    # Compare with tolerance
     match = distance < self._tolerance
     matches = [False] * len(known_encodings)
     if match:
@@ -72,19 +84,20 @@ class KD_Tree_Module(Recognizer):
     return matches
 
   @error_handler
-  def _process_matches(self, matches):
+  def _process_matches(self, matches: List[bool]) -> None:
+    students = self._context.get_students()
     for i, match in enumerate(matches):
-      if match:
+      if match and i < len(students):
         with self._scan_lock:
-          student = self._context.get_students()[i]
+          student = students[i]
           if not student.is_attended():
             self._record_attendance(student)
             Thread(target=winsound.Beep, args=(2500, 500)).start()
 
   @error_handler
-  def _record_attendance(self, student: Student):
+  def _record_attendance(self, student: Student) -> None:
     self._config.frame_processing_executor.submit(
-      insert_attendance,
+      self.attendace_controller.insert_attendance,
       student.student_id,
       f"{student.first_name} {student.last_name}"
     )

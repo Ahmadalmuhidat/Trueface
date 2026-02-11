@@ -1,13 +1,11 @@
 class User:
-  def __init__(self, user_id: str, name: str, email: str, role: str):
+  def __init__(self, user_id: str, name: str, email: str, role: str) -> None:
     self.user_id = user_id
     self.name = name
     self.email = email
     self.role = role
 
-    self_lectures = []
-
-  def update(self, name: str = None, email: str = None, role: str = None):
+  def update(self, name: str = None, email: str = None, role: str = None) -> None:
     if name is not None:
       self.name = name
     if email is not None:

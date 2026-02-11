@@ -1,12 +1,16 @@
 import threading
+import os
 
+from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 
-class Configrations:
-  # static
-  window = None
+class Configurations:
+  # singleton pattern
   _instance = None
   _initialized = False
+
+  # static
+  window = None
 
   def __new__(cls):
     if cls._instance is None:
@@ -18,26 +22,28 @@ class Configrations:
       return
     self.__class__._initialized = True
 
-    # private
+    from app.core.face_recognition_module import FaceRecognitionModule
+    from app.core.KD_Tree import KD_Tree_Module
+
     # self._backend_server_ip = "34.29.161.87"
     self._backend_server_ip = "localhost"
     self._backend_port = 8000
     self._backend_entry_route = "teacher"
+
+    # performance
     self._processing_mode = "CPU"
+    cpu_count = os.cpu_count() or 4
 
-    from app.core.face_recognition_module import FaceRecognitionModule
-    from app.core.KD_Tree import KD_Tree_Module
-
-    # AI models
+    # models
     self.current_recognizer = "face_recognition"
     self.face_recognition_module = FaceRecognitionModule()
     self.KD_tree_module = KD_Tree_Module()
 
-    # threading
-    self.frame_processing_executor = ThreadPoolExecutor(max_workers=10)
-    self.ui_threads_executor = ThreadPoolExecutor(max_workers=5)
+    # thread pools
+    self.frame_processing_executor = ThreadPoolExecutor(max_workers=min(cpu_count, 8))
+    self.ui_threads_executor = ThreadPoolExecutor(max_workers=2)
     self.shutdown_event = threading.Event()
-  
+
   def switch_model_to_KTD(self):
     self.KD_tree_module._build_kd_tree()
     self.current_recognizer = "KTD_Tree"

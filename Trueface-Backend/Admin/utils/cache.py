@@ -23,8 +23,11 @@ def cache_result(timeout=300, key_prefix="api"):
 
 def cache_invalidate(pattern):
   try:
-    cache.delete_many(cache.keys(f"*{pattern}*"))
-  except:
+    if hasattr(cache, 'keys'):
+      cache.delete_many(cache.keys(f"*{pattern}*"))
+    else:
+      cache.clear()
+  except Exception:
     pass
 
 def get_or_set_cache(key, callable_func, timeout=300):

@@ -5,7 +5,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 class Logger:
-  def __init__(self, name: str = "Trueface-Cam", log_file: str = "logs/my_app.log", level=logging.INFO, max_bytes=5_000_000, backup_count=3):
+  def __init__(self, name: str = "Trueface-Cam", log_file: str = "logs/my_app.log", level=logging.INFO, max_bytes=5_000_000, backup_count=3) -> None:
     self.logger = logging.getLogger(name)
     self.logger.setLevel(level)
     self.logger.propagate = False
@@ -24,7 +24,7 @@ class Logger:
     self.logger.addHandler(console_handler)
     self.logger.addHandler(file_handler)
 
-  def log_exception(self, exc: Exception):
+  def log_exception(self, exc: Exception) -> None:
     exc_type, exc_obj, exc_tb = sys.exc_info()
     filename = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     lineno = exc_tb.tb_lineno

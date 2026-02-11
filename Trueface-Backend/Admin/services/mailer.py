@@ -15,5 +15,5 @@ def SendEmailTemplate(subject: str, html_content: str, recipient_list: List[str]
     email.send(fail_silently=False)
     return True
   except Exception as e:
-      print(f"Error sending HTML email: {e}")
-      return False
+    print(f"Error sending HTML email: {e}")
+    return False

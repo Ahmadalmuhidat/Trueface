@@ -4,11 +4,10 @@ import json
 
 from requests.exceptions import Timeout, RequestException
 from app.config.context import Context
-from app.config.configrations import Configrations
-from app.controllers.lectures import get_lectures_by_teacher
-from app.controllers.students import get_students_by_lecture
-from app.helper.alerts_manager import AlertsManager
-from app.helper.error_handler import error_handler
+from app.config.configurations import Configurations
+from app.utils.alerts_manager import AlertsManager
+from app.utils.error_handler import error_handler
+from app.controllers.lectures import LectureController
 
 class Settings():
   def __init__(self):
@@ -16,11 +15,17 @@ class Settings():
 
     self._camera_manager = CameraManager()
     self._context = Context()
-    self._config = Configrations()
+    self._config = Configurations()
     self._alert = AlertsManager()
+    self._lectures_loaded = False
+    self._cameras_loaded = False
+    self._loading_indicators = {}
+    self._lecture_controller = LectureController()
 
     self.current_lecture_entry = None
     self.available_cameras_entry = None
+    self.lecture_id_title_map = {}
+    self.cameras_key_map = {}
 
     self._load_lectures()
     self._load_cameras()
@@ -31,69 +36,141 @@ class Settings():
 
   @error_handler
   def _load_lectures(self):
-    get_lectures_by_teacher()
-    self.class_id_title_map = {
-      f"{camera.subject_area} {camera.start_time}-{camera.end_time}": camera.class_id
-      for camera in self._context.get_lectures()
-    }
+    if self._lectures_loaded:
+      return
+
+    if hasattr(self, 'current_lecture_entry') and self.current_lecture_entry:
+      self.current_lecture_entry.configure(values=["Loading lectures..."])
+
+    def _load_lectures_async():
+      try:
+        self._lecture_controller.get_lectures_by_teacher()
+        self.lecture_id_title_map = {
+          f"{lecture.subject_area} {lecture.start_time}-{lecture.end_time}": lecture.lecture_id
+          for lecture in self._context.get_lectures()
+        }
+        self._lectures_loaded = True
+
+        if hasattr(self, 'current_lecture_entry') and self.current_lecture_entry:
+          lecture_values = [f"{lecture.subject_area} {lecture.start_time}-{lecture.end_time}" for lecture in self._context.get_lectures()]
+          self.current_lecture_entry.configure(values=lecture_values)
+          if lecture_values:
+            self.current_lecture_entry.set(lecture_values[0])
+
+      except Exception as e:
+        self._alert.error(f"Failed to load lectures: {str(e)}")
+        if hasattr(self, 'current_lecture_entry') and self.current_lecture_entry:
+          self.current_lecture_entry.configure(values=["Failed to load lectures"])
+
+    self._config.ui_threads_executor.submit(_load_lectures_async)
 
   @error_handler
   def _load_cameras(self):
-    self.cameras_key_map = {
-      cam.get_name(): cam.get_index()
-      for cam in self._camera_manager.camera_scanner.get_available_cameras()
-    }
+    if self._cameras_loaded:
+      return
+
+    if hasattr(self, 'available_cameras_entry') and self.available_cameras_entry:
+      self.available_cameras_entry.configure(values=["Loading cameras..."])
+
+    def _load_cameras_async():
+      try:
+        available_cameras = self._camera_manager.camera_scanner.get_available_cameras()
+
+        if not available_cameras:
+          self._camera_manager.camera_scanner.scan_connected_cameras()
+          available_cameras = self._camera_manager.camera_scanner.get_available_cameras()
+
+        self.cameras_key_map = {
+          cam.get_name(): cam.get_index()
+          for cam in available_cameras
+        }
+        self._cameras_loaded = True
+
+        if hasattr(self, 'available_cameras_entry') and self.available_cameras_entry:
+          camera_values = list(self.cameras_key_map.keys())
+          self.available_cameras_entry.configure(values=camera_values)
+
+          if camera_values:
+            self.available_cameras_entry.set(camera_values[0])
+
+      except Exception as e:
+        self._alert.error(f"Failed to load cameras: {str(e)}")
+        if hasattr(self, 'available_cameras_entry') and self.available_cameras_entry:
+          self.available_cameras_entry.configure(values=["Failed to load cameras"])
+
+    self._config.ui_threads_executor.submit(_load_cameras_async)
 
   @error_handler
   def _update_current_lecture(self):
-    self._config.loading_cursor_on()
-    try:
-      selected_id = self.class_id_title_map.get(self.current_lecture_entry.get())
-      ClassObject = next(
-        (lecture for lecture in self._context.get_lectures() if lecture.class_id == selected_id),
-        None
-      )
-      self._context.set_current_lecture(ClassObject)
-      get_students_by_lecture()
+    if not self._lectures_loaded:
+      self._alert.warning("Lectures are still loading, please wait...")
+      return
+    
+    def _update_lecture_async():
+      self._config.loading_cursor_on()
+      try:
+        selected_id = self.lecture_id_title_map.get(self.current_lecture_entry.get())
+        LectureObject = next(
+          (lecture for lecture in self._context.get_lectures() if lecture.lecture_id == selected_id),
+          None
+        )
+        self._context.set_current_lecture(LectureObject)
+        self._context.fetch_students()
+        self._alert.success("Lecture has been updated")
 
-    finally:
-      self._config.loading_cursor_off()
+      except Exception as e:
+        self._alert.error(f"Failed to update lecture: {str(e)}")
+      finally:
+        self._config.loading_cursor_off()
 
-    self._alert.success("Lecture has been updated")
+    self._config.ui_threads_executor.submit(_update_lecture_async)
 
   @error_handler
-  def _update_current_camera(self, user_camera_selection):
-    self._camera_manager.set_current_camera(self.cameras_key_map.get(user_camera_selection))
+  def _update_current_camera(self, user_camera_selection: str):
+    self._camera_manager.set_current_camera_index(self.cameras_key_map.get(user_camera_selection))
     self._alert.success("Camera has been updated")
 
   @error_handler
   def _check_api_health(self):
-    try:
-      original = self._config.get_backend_endpoint()
-      self._config.set_backend_ip_address(self.server_api_entry.get())
-      response = requests.get(self._config.get_backend_endpoint(), timeout=5)
+    def _check_api_async():
+      try:
+        original = self._config.get_backend_ip_address()
+        self._config.set_backend_ip_address(self.server_api_entry.get())
+        response = requests.get(self._config.get_backend_endpoint(), timeout=3)
 
-      if response.status_code == 200:
-        try:
-          api_active = response.json()
-          if api_active.get("data"):
-            self._alert.success(f"{self.server_api_entry.get()} is working fine")
-          else:
-            self._alert.error(f"{self.server_api_entry.get()} does not work")
+        if response.status_code == 200:
+          try:
+            api_active = response.json()
+            if api_active.get("data"):
+              self._alert.success(f"{self.server_api_entry.get()} server is working fine")
+            else:
+              self._alert.error(f"{self.server_api_entry.get()} does not work")
+              self._config.set_backend_ip_address(original)
+          except json.JSONDecodeError:
+            self._alert.error(f"Invalid response from {self.server_api_entry.get()}")
             self._config.set_backend_ip_address(original)
-        except json.JSONDecodeError:
-          self._alert.error(f"Invalid response from {self.server_api_entry.get()}")
+        else:
+          self._alert.error(f"{self.server_api_entry.get()} returned status {response.status_code}")
           self._config.set_backend_ip_address(original)
-      else:
-        self._alert.error(f"{self.server_api_entry.get()} returned status {response.status_code}")
+
+      except Timeout:
+        self._alert.error(f"{self.server_api_entry.get()} did not respond in time")
         self._config.set_backend_ip_address(original)
-    
-    except Timeout:
-      self._alert.error(f"{self.server_api_entry.get()} did not respond in time")
-      self._config.set_backend_ip_address(original)
-    except RequestException as e:
-      self._alert.error(f"An error occurred: {str(e)}")
-      self._config.set_backend_ip_address(original)
+      except RequestException as e:
+        self._alert.error(f"An error occurred: {str(e)}")
+        self._config.set_backend_ip_address(original)
+
+    self._config.ui_threads_executor.submit(_check_api_async)
+
+  @error_handler
+  def _refresh_lectures(self):
+    self._lectures_loaded = False
+    self._load_lectures()
+
+  @error_handler
+  def _refresh_cameras(self):
+    self._cameras_loaded = False
+    self._load_cameras()
 
   # --------------------
   # view entry
@@ -121,14 +198,27 @@ class Settings():
 
     self.current_lecture_entry = customtkinter.CTkComboBox(
       content_frame,
-      values=[f"{lecture.subject_area} {lecture.start_time}-{lecture.end_time}" for lecture in self._context.get_lectures()],
+      values=["Loading lectures..."],
       width=300,
-      command=lambda _: self._config.frame_processing_executor.submit(self._update_current_lecture)
+      command=lambda _: self._update_current_lecture()
     )
     self.current_lecture_entry.grid(
       row=5,
       column=1,
       padx=10,
+      pady=10
+    )
+
+    refresh_lectures_button = customtkinter.CTkButton(
+      content_frame,
+      text="Refresh",
+      width=100,
+      command=self._refresh_lectures
+    )
+    refresh_lectures_button.grid(
+      row=5,
+      column=2,
+      padx=5,
       pady=10
     )
 
@@ -146,7 +236,7 @@ class Settings():
 
     self.available_cameras_entry = customtkinter.CTkComboBox(
       content_frame,
-      values=list(self.cameras_key_map.keys()),
+      values=["Loading cameras..."],
       width=300,
       command=self._update_current_camera
     )
@@ -156,15 +246,12 @@ class Settings():
       padx=10,
       pady=10
     )
-    self.available_cameras_entry.set(
-      self.cameras_key_map.get(self._camera_manager.get_current_camera()) or "No Camera Selected"
-    )
 
     scan_cameras_button = customtkinter.CTkButton(
       content_frame,
       text="Scan Cameras",
       width=140,
-      command=lambda: self._camera_manager.camera_scanner.scan_connected_cameras()
+      command=self._refresh_cameras
     )
     scan_cameras_button.grid(
       row=7,
@@ -208,6 +295,7 @@ class Settings():
       padx=10,
       pady=10
     )
+
     self.server_api_entry.insert(0, self._config.get_backend_ip_address())
 
     check_api_button = customtkinter.CTkButton(
@@ -247,4 +335,5 @@ class Settings():
       padx=10,
       pady=10
     )
+
     self.processing_mode_entry.set(self._config.get_processing_mode())

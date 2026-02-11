@@ -5,9 +5,9 @@ import psutil
 import requests
 import json
 
-from app.config.configrations import Configrations
+from app.config.configurations import Configurations
 from app.config.context import Context
-from app.helper.error_handler import error_handler
+from app.utils.error_handler import error_handler
 
 class Home():
   def __init__(self):
@@ -15,11 +15,42 @@ class Home():
 
     self._camera_manager = CameraManager()
     self._context = Context()
-    self._config = Configrations()
+    self._config = Configurations()
+    self._update_timers = {}
+    self._last_cpu_metrics = 0
+    self._last_attendance_count = 0
+    self._destroyed = False
+
+    self.window = None
 
   # --------------------
   # operations
   # --------------------
+
+  def _schedule_update(self, method_name, delay, *args, **kwargs):
+    if self._destroyed or not hasattr(self, 'window') or self.window is None:
+      return
+    
+    if method_name in self._update_timers:
+      try:
+        self.window.after_cancel(self._update_timers[method_name])
+      except:
+        pass
+      finally:
+        del self._update_timers[method_name]
+    
+    def safe_callback():
+      try:
+        if hasattr(self, method_name) and callable(getattr(self, method_name)):
+          getattr(self, method_name)(*args, **kwargs)
+      except Exception as e:
+        print(f"Error in scheduled update {method_name}: {e}")
+    
+    try:
+      timer_id = self.window.after(delay, safe_callback)
+      self._update_timers[method_name] = timer_id
+    except Exception as e:
+      print(f"Error scheduling update {method_name}: {e}")
 
   @error_handler
   def _update_camera_status(self):
@@ -33,11 +64,11 @@ class Home():
         text="Disconnected",
         text_color="red"
       )
-    self.window.after(5000, self._update_camera_status)
+    self._schedule_update("_update_camera_status", 5000)
 
   def _update_api_status(self):
     try:
-      response = requests.get(self._config.get_backend_endpoint(), timeout=5).content
+      response = requests.get(self._config.get_backend_endpoint(), timeout=3).content
       api_active = json.loads(response.decode('utf-8'))
 
       if api_active.get("data"):
@@ -56,20 +87,31 @@ class Home():
         text="Disconnected",
         text_color="red"
       )
-    self.window.after(2000, self._update_api_status)
+    self._schedule_update("_update_api_status", 3000)
 
   @error_handler
   def _update_cpu_metrics(self):
     metrics = psutil.cpu_percent(interval=None)
-    self.cpu_count.configure(text=f"CPU Usage \n\n{metrics}%")
-    self.window.after(1000, self._update_cpu_metrics)
+    if abs(metrics - self._last_cpu_metrics) > 2:
+      self.cpu_count.configure(text=f"CPU Usage \n\n{metrics}%")
+      self._last_cpu_metrics = metrics
+    self._schedule_update("_update_cpu_metrics", 2000)
 
   @error_handler
   def _update_attendance_count(self):
-    self.attendance_count.configure(
-      text = f"Attendance \n\n{sum(1 for student in self._context.get_students() if student.is_attended)}"
-    )
-    self.window.after(5000, self._update_attendance_count)
+    try:
+      students = self._context.get_students()
+      if students is None:
+        return
+      
+      current_count = sum(1 for student in students if student.is_attended())
+      if current_count != self._last_attendance_count:
+        self.attendance_count.configure(text = f"Attendance \n\n{current_count}")
+        self._last_attendance_count = current_count
+    except Exception as e:
+      print(f"Error updating attendance count: {e}")
+    finally:
+      self._schedule_update("_update_attendance_count", 5000)
 
   # --------------------
   # view entry
@@ -77,6 +119,8 @@ class Home():
 
   @error_handler
   def launch_view(self, parent):
+    self.window = parent.winfo_toplevel()
+    
     parent.rowconfigure(0, weight = 1)
     parent.rowconfigure(1, weight = 3)
     parent.rowconfigure(2, weight = 1)
@@ -217,7 +261,10 @@ class Home():
       pady = 15
     )
 
-    self._config.ui_threads_executor.submit(self._update_cpu_metrics)
-    self._config.ui_threads_executor.submit(self._update_attendance_count)
-    self._config.ui_threads_executor.submit(self._update_api_status)
-    self._config.ui_threads_executor.submit(self._update_camera_status)
+    try:
+      self._config.ui_threads_executor.submit(self._update_cpu_metrics)
+      self._config.ui_threads_executor.submit(self._update_attendance_count)
+      self._config.ui_threads_executor.submit(self._update_api_status)
+      self._config.ui_threads_executor.submit(self._update_camera_status)
+    except Exception as e:
+      print(f"Error starting UI updates: {e}")

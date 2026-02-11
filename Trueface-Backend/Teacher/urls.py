@@ -8,7 +8,7 @@ urlpatterns = [
   # attendance
   path('attendance/insert', attendance.InsertAttendance),
   path('attendance/delete', attendance.DeleteAttendance),
-  path('attendance/clear_class', attendance.ClearClassAttendance),
+  path('attendance/clear_lecture', attendance.ClearLectureAttendance),
 
   # lectures
   path('lectures/get_by_teacher', lectures.GetLecturesByTeacher),
@@ -17,6 +17,6 @@ urlpatterns = [
 
   # students
   path('students/get_by_lecture', students.GetStudentsByLecture),
-  path('students/remove_from_class', students.RemoveStudentFromClass),
+  path('students/remove_from_lecture', students.RemoveStudentFromLecture),
   path('students/clear_attendance', students.ClearStudentAttendance)
 ]

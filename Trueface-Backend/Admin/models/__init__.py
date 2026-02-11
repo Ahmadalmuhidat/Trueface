@@ -2,15 +2,15 @@
 from .user import User
 from .student import Student
 from .course import Course
-from .class_model import Class
-from .class_student_relation import ClassStudentRelation
+from .lecture import Lecture
+from .lecture_student_relation import LectureStudentRelation
 from .attendance import Attendance
 
 __all__ = [
-    'User',
-    'Student', 
-    'Course',
-    'Class',
-    'ClassStudentRelation',
-    'Attendance'
+  'User',
+  'Student', 
+  'Course',
+  'Lecture',
+  'LectureStudentRelation',
+  'Attendance'
 ]

@@ -1,22 +1,29 @@
 import customtkinter
 import tkinter
+import gc
 
 from PIL import Image
 from app.config.context import Context
-from app.config.configrations import Configrations
+from app.config.configurations import Configurations
 from app.interfaces.student import Student
 from app.config.router import Router
 from app.views.student_profile import StudentProfile
-from app.controllers.students import add_student, remove_student, update_student
-from app.helper.error_handler import error_handler
+from app.controllers.students import StudentsController
+from app.utils.error_handler import error_handler
+from app.helper.pagination import PaginationComponent
+from app.utils.alerts_manager import AlertsManager
 
 class Students:
   def __init__(self):
     self._context = Context()
-    self._config = Configrations()
+    self._config = Configurations()
     self._router = Router()
+    self._alerts_manager = AlertsManager()
+    self._students_controller = StudentsController()
 
     self.students = self._context.get_students()
+    self.pagination = None
+    self.current_page_data = []
     self.students_rows = []
     self.headers = [
       "Student ID",
@@ -31,68 +38,73 @@ class Students:
   # operations
   # --------------------
 
-  def _search_stuedent(self, term):
-    self.students = list(filter(lambda student: student.student_id == term, self.students))
-    self._display_students_table()
-
-  def _refresh_students_table(self):
+  def _search(self, term):
+    self.students = [student for student in self._students if term == student.id or term in student.name]
     self._display_students_table()
 
   @error_handler
-  def _delete_student(self, student: Student):
-    self._config.loading_cursor_on()
-    remove_student(student)
-    self.students = self._context.get_students()
-    self._config.loading_cursor_on()
-    self._refresh_students_table()
+  def _delete(self, student: Student):
+    if self._students_controller.remove_student(student):
+      self._refresh_students_table()
 
   @error_handler
-  def _submit_new_student(self):
-    self._config.loading_cursor_on()
-
+  def _create(self):
     new_student = Student(
-      self.student_id_entry.get(),
-      self.student_first_name_entry.get(),
-      self.student_middle_name_entry.get(),
-      self.student_last_name_entry.get(),
-      self.student_gender_entry.get(),
-      picture=self.student_image_entry.get()
+      self.student_id_entry.get().strip(),
+      self.student_first_name_entry.get().strip(),
+      self.student_middle_name_entry.get().strip(),
+      self.student_last_name_entry.get().strip(),
+      self.student_gender_entry.get().strip(),
+      picture=self.student_image_entry.get().strip()
     )
-    add_student(new_student)
 
-    for entry in [
-      self.student_id_entry,
-      self.student_first_name_entry,
-      self.student_middle_name_entry,
-      self.student_last_name_entry,
-      self.student_image_entry
-    ]:
-      entry.delete(0, customtkinter.END)
+    if self._students_controller.add_student(new_student):
+      for entry in [
+        self.student_id_entry,
+        self.student_first_name_entry,
+        self.student_middle_name_entry,
+        self.student_last_name_entry,
+        self.student_image_entry
+      ]:
+        entry.delete(0, customtkinter.END)
 
-    self._add_student_row(new_student, len(self.students) + 1)
-    self._context.add_student(new_student)
-    self.students.append(new_student)
-    self.students_count.configure(text="Results: " + str(len(self.students)))
-    self._config.loading_cursor_off()
+      self._context.add_student(new_student)
+      self.students.append(new_student)
+
+      if self.pagination:
+        self.pagination.set_data(self.students)
+      else:
+        self._add_student_row(new_student, len(self.students))
+        self.students_count.configure(text="Results: " + str(len(self.students)))
 
   @error_handler
-  def _submit_edit_student(self, student: Student):
-    self._config.loading_cursor_on()
-
+  def _update(self, student: Student):
     student.first_name = self.student_first_name_entry.get()
     student.middle_name = self.student_middle_name_entry.get()
     student.last_name = self.student_last_name_entry.get()
     student.gender = self.student_gender_entry.get()
 
-    update_student(student)
-    self._refresh_students_table()
-    self.pop_window.destroy()
-    self._config.loading_cursor_off()
+    if self._students_controller.update_student(student):
+      self._refresh_students_table()
 
   @error_handler
   def _navigate_to_stduent_profile(self, student: Student):
     self._context.set_current_student(student)
     self._router.navigate(StudentProfile)
+
+  def _on_page_change(self, page_data, current_page):
+    self.current_page_data = page_data
+    self._display_students_table()
+
+  @error_handler
+  def _select_image(self):
+    file_path = tkinter.filedialog.askopenfilename()
+    if file_path:
+      image = Image.open(file_path)
+      image.thumbnail((150, 150))
+      self.student_image = file_path
+      self.student_image_entry.delete(0, customtkinter.END)
+      self.student_image_entry.insert(0, file_path)
 
   # --------------------
   # forms
@@ -102,14 +114,18 @@ class Students:
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
     self.pop_window.title("Edit Student")
-    self.pop_window.geometry("420x420")
-    self.pop_window.resizable(False, False)
+    self.pop_window.geometry("450x450")
+    self.pop_window.resizable(True, True)
+    self.pop_window.minsize(400, 400)
+
+    scrollable_frame = customtkinter.CTkScrollableFrame(self.pop_window)
+    scrollable_frame.pack(fill="both", expand=True, padx=15, pady=15)
 
     entry_width = 300
     pad_x, pad_y = 15, 10
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Student ID:",
       anchor="w"
     ).grid(
@@ -121,7 +137,7 @@ class Students:
     )
 
     self.student_id_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_id_entry.grid(
@@ -138,7 +154,7 @@ class Students:
     self.student_id_entry.configure(state="readonly")
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="First Name:",
       anchor="w"
     ).grid(
@@ -150,7 +166,7 @@ class Students:
     )
 
     self.student_first_name_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_first_name_entry.grid(
@@ -166,7 +182,7 @@ class Students:
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Middle Name:",
       anchor="w"
     ).grid(
@@ -178,7 +194,7 @@ class Students:
     )
 
     self.student_middle_name_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_middle_name_entry.grid(
@@ -194,7 +210,7 @@ class Students:
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Last Name:",
       anchor="w"
     ).grid(
@@ -206,7 +222,7 @@ class Students:
     )
 
     self.student_last_name_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_last_name_entry.grid(
@@ -221,7 +237,7 @@ class Students:
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Gender:",
       anchor="w"
     ).grid(
@@ -233,7 +249,7 @@ class Students:
     )
 
     self.student_gender_entry = customtkinter.CTkComboBox(
-      self.pop_window,
+      scrollable_frame,
       values=["Male", "Female"],
       width=entry_width
     )
@@ -246,45 +262,45 @@ class Students:
     )
     self.student_gender_entry.set(student.gender)
 
+    # Add some spacing
+    spacer = customtkinter.CTkLabel(scrollable_frame, text="")
+    spacer.grid(row=5, column=0, columnspan=2, pady=10)
+
     submit_button = customtkinter.CTkButton(
-      self.pop_window,
+      scrollable_frame,
       text="Update Student",
-      command=lambda: self._submit_edit_student(student),
-      width=entry_width
+      command=lambda: self._update(student),
+      height=35,
+      font=("Arial", 12, "bold")
     )
     submit_button.grid(
-      row=5,
+      row=6,
       column=0,
       columnspan=2,
       padx=pad_x,
-      pady=pad_y + 5,
+      pady=pad_y + 10,
       sticky="ew"
     )
 
-    self.pop_window.columnconfigure(1, weight=1)
-
-  @error_handler
-  def _select_image(self):
-    file_path = tkinter.filedialog.askopenfilename()
-    if file_path:
-      image = Image.open(file_path)
-      image.thumbnail((150, 150))
-      self.student_image = file_path
-      self.student_image_entry.delete(0, customtkinter.END)
-      self.student_image_entry.insert(0, file_path)
+    # Configure grid weights for responsive layout
+    scrollable_frame.columnconfigure(1, weight=1)
 
   def _add_student_form(self):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
     self.pop_window.title("Add New Student")
-    self.pop_window.geometry("420x440")
-    self.pop_window.resizable(False, False)
+    self.pop_window.geometry("450x500")
+    self.pop_window.resizable(True, True)
+    self.pop_window.minsize(400, 450)
+
+    scrollable_frame = customtkinter.CTkScrollableFrame(self.pop_window)
+    scrollable_frame.pack(fill="both", expand=True, padx=15, pady=15)
 
     entry_width = 300
     pad_x, pad_y = 15, 10
 
     student_id_label = customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Student ID:",
       anchor="w"
     )
@@ -296,7 +312,7 @@ class Students:
       sticky="w"
     )
     self.student_id_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_id_entry.grid(
@@ -308,7 +324,7 @@ class Students:
     )
 
     first_name_label = customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="First Name:",
       anchor="w"
     )
@@ -320,7 +336,7 @@ class Students:
       sticky="w"
     )
     self.student_first_name_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_first_name_entry.grid(
@@ -332,7 +348,7 @@ class Students:
     )
 
     middle_name_label = customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Middle Name:",
       anchor="w"
     )
@@ -344,7 +360,7 @@ class Students:
       sticky="w"
     )
     self.student_middle_name_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_middle_name_entry.grid(
@@ -356,7 +372,7 @@ class Students:
     )
 
     last_name_label = customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Last Name:",
       anchor="w"
     )
@@ -368,7 +384,7 @@ class Students:
       sticky="w"
     )
     self.student_last_name_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_width
     )
     self.student_last_name_entry.grid(
@@ -380,7 +396,7 @@ class Students:
     )
 
     gender_label = customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Gender:",
       anchor="w"
     )
@@ -392,7 +408,7 @@ class Students:
       sticky="w"
     )
     self.student_gender_entry = customtkinter.CTkComboBox(
-      self.pop_window,
+      scrollable_frame,
       values=["Male", "Female"],
       width=entry_width
     )
@@ -406,7 +422,7 @@ class Students:
     )
 
     image_label = customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Image:",
       anchor="w"
     )
@@ -417,42 +433,64 @@ class Students:
       pady=pad_y,
       sticky="w"
     )
-    self.student_image_entry = customtkinter.CTkEntry(
-      self.pop_window,
-      width=entry_width
-    )
-    self.student_image_entry.grid(
+
+    # Create a frame for image selection
+    image_frame = customtkinter.CTkFrame(scrollable_frame)
+    image_frame.grid(
       row=5,
       column=1,
       padx=pad_x,
       pady=pad_y,
       sticky="ew"
     )
-
+    
+    self.student_image_entry = customtkinter.CTkEntry(
+      image_frame,
+      placeholder_text="Select an image file"
+    )
+    self.student_image_entry.pack(
+      side="left",
+      padx=(0, 10),
+      pady=5,
+      fill="x",
+      expand=True
+    )
+    
     select_image_button = customtkinter.CTkButton(
-      self.pop_window,
-      text="Select Image",
+      image_frame,
+      text="Browse",
       command=self._select_image,
       width=120
     )
-    select_image_button.grid(row=5, column=0, padx=pad_x, pady=pad_y, sticky="w")
+    select_image_button.pack(side="right", padx=5, pady=5)
 
-    submit_button = customtkinter.CTkButton(
-      self.pop_window,
-      text="Save Student",
-      command=self._submit_new_student,
-      width=entry_width
-    )
-    submit_button.grid(
+    # Add some spacing
+    spacer = customtkinter.CTkLabel(scrollable_frame, text="")
+    spacer.grid(
       row=6,
       column=0,
       columnspan=2,
+      pady=10
+    )
+
+    submit_button = customtkinter.CTkButton(
+      scrollable_frame,
+      text="Save Student",
+      command=self._create,
+      height=35,
+      font=("Arial", 12, "bold")
+    )
+    submit_button.grid(
+      row=7,
+      column=0,
+      columnspan=2,
       padx=pad_x,
-      pady=pad_y + 5,
+      pady=pad_y + 10,
       sticky="ew"
     )
 
-    self.pop_window.columnconfigure(1, weight=1)
+    # Configure grid weights for responsive layout
+    scrollable_frame.columnconfigure(1, weight=1)
 
   # --------------------
   # table functions
@@ -461,8 +499,14 @@ class Students:
   @error_handler
   def _clear_students_table(self):
     for widget in self.students_rows:
-      widget.destroy()
+      try:
+        widget.destroy()
+      except:
+        pass
     self.students_rows.clear()
+    
+    if len(self.students) > 100:
+      gc.collect()
 
   @error_handler
   def _add_student_row(self, student: Student, row):
@@ -517,7 +561,7 @@ class Students:
       self.students_table_frame,
       text="Delete",
       fg_color="red",
-      command=lambda: self._config.executor.submit(self._delete_student, student)
+      command=lambda: self._config.executor.submit(self._delete, student)
     )
     delete_button.grid(
       row=row,
@@ -530,14 +574,27 @@ class Students:
 
   @error_handler
   def _display_students_table(self):
-    self._config.loading_cursor_on()
     self._clear_students_table()
 
     for row, student in enumerate(self.students, start=1):
       self._add_student_row(student, row)
 
-    self.students_count.configure(text=f"Results: {len(self.students)}")
-    self._config.loading_cursor_off()
+    if self.pagination:
+      pagination_info = self.pagination.get_pagination_info()
+      self.students_count.configure(
+        text=f"Showing {pagination_info['start_index'] + 1}-{pagination_info['end_index']} of {pagination_info['total_items']} students"
+      )
+    else:
+      self.students_count.configure(text=f"Showing {len(self.students)} students")
+
+  def _refresh_students_table(self):
+    self._context.fetch_students()
+    self.students = self._context.get_students()
+
+    if self.pagination:
+      self.pagination.set_data(self.students)
+    else:
+      self._display_students_table()
 
   # --------------------
   # view entry
@@ -562,7 +619,7 @@ class Students:
 
     search_button = customtkinter.CTkButton(
       search_bar_frame,
-      command=lambda: self._search_stuedent(search_bar.get()),
+      command=lambda: self._search(search_bar.get()),
       text="Search"
     )
     search_button.grid(
@@ -624,4 +681,12 @@ class Students:
     for col in range(len(self.headers)):
       self.students_table_frame.columnconfigure(col, weight=1)
 
-    self._config.executor.submit(self._display_students_table)
+    self.pagination = PaginationComponent(
+      parent=parent,
+      items_per_page=10,
+      on_page_change=self._on_page_change
+    )
+    self.pagination.pack(fill="x", pady=(10, 0))
+
+    self.pagination.set_data(self.students)
+

@@ -1,13 +1,13 @@
 import customtkinter
 
-from app.controllers.auth import login
+from app.controllers.auth import AuthController
 from app.config.context import Context
-from app.config.configrations import Configrations
-from app.helper.error_handler import error_handler
+from app.config.configurations import Configurations
+from app.utils.error_handler import error_handler
 
 class Login():
   def __init__(self):
-    self._config = Configrations()
+    self._config = Configurations()
     self._context = Context()
 
   # --------------------
@@ -18,7 +18,7 @@ class Login():
   def _login(self):
     from main import Main
 
-    result = login(
+    result = AuthController().login(
       self.email_entry.get(),
       self.password_entry.get()
     )
@@ -104,9 +104,6 @@ class Login():
       sticky = "nsew",
     )
 
-    # --------------------
-    # developed by footer
-    # --------------------
     footer_label = customtkinter.CTkLabel(
       content_frame,
       text = "Developed by Ahmad Almuhidat",

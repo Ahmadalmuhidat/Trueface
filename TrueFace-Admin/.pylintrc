@@ -1,0 +1,15 @@
+[MASTER]
+# Ignore the environment directories
+ignore=env,venv,.venv,ENV
+
+[MESSAGES CONTROL]
+# Disable code duplication check as requested by user
+# Also disable some common false positives
+disable=
+    duplicate-code,
+    no-member,
+    import-error
+
+[TYPECHECK]
+# Whitelist members that are dynamically generated or difficult for pylint to find
+generated-members=cv2.*,customtkinter.*,mysql.*,requests.*

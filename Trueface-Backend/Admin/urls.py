@@ -11,10 +11,9 @@ urlpatterns = [
 
   # students
   path('students/insert', students.InsertStudent),
-  path('students/remove', students.RemoveStudent),
   path('students/update', students.UpdateStudent),
+  path('students/remove', students.RemoveStudent),
   path('students/get_all', students.GetAllStudents),
-  path('students/clear_lectures', students.ClearLectures),
   path('students/get_lectures', students.GetStudentLectures),
   path('students/remove_lecture', students.RemoveStudentFromLecture),
   path('students/add_lecture', students.AddStudentToLecture),

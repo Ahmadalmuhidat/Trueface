@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 from app.helper.logger import Logger
 
@@ -10,10 +11,16 @@ def error_handler(func):
     try:
       return func(*args, **kwargs)
     except Exception as e:
-      exc_type, exc_obj, exc_tb = sys.exc_info()
-      fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-      print(exc_type, fname, exc_tb.tb_lineno)
-      print(exc_obj)
+      tb = e.__traceback__
+
+      while tb.tb_next:
+        tb = tb.tb_next
+
+      filename = os.path.basename(tb.tb_frame.f_code.co_filename)
+      lineno = tb.tb_lineno
+
+      print(type(e), filename, lineno)
+      print(e)
+
       LOGGER.log_exception(e)
-      pass
   return wrapper

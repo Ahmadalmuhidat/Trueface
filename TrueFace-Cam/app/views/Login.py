@@ -2,24 +2,26 @@ import os
 import sys
 import customtkinter
 
-from main import Main
 from app.config.context import Context
-from app.controllers.auth import login
-from app.helper.error_handler import error_handler
+from app.controllers.auth import AuthController
+from app.utils.error_handler import error_handler
 
 class Login():
   def __init__(self):
     self._context = Context()
+    self._auth_controller = AuthController()
 
   # --------------------
   # operations
   # --------------------
 
   def _login(self):
+    from main import Main
+
     email = self.email_entry.get()
     password = self.password_entry.get()
 
-    result = login(email, password)
+    result = self._auth_controller.login(email, password)
     if result:
       self._context.set_jwt_token(result)
       self.window.destroy()

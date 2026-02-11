@@ -1,20 +1,21 @@
 import cv2
 
-from app.helper.error_handler import error_handler
+from app.utils.error_handler import error_handler
 
 class Camera:
-  def __init__(self, index: int, name: str):
+  def __init__(self, index: int, name: str) -> None:
+    # private
     self._name = name
     self._index = index
-  
-  def get_name(self):
+
+  def get_name(self) -> str:
     return self._name
   
-  def get_index(self):
+  def get_index(self) -> int:
     return self._index
   
   @error_handler
-  def test_if_working(self):
+  def test_if_working(self) -> bool:
     camera = cv2.VideoCapture(self._index)
 
     if camera.isOpened():
@@ -27,13 +28,12 @@ class Camera:
     return False
 
   @error_handler
-  def view_stream(self):
+  def view_stream(self) -> None:
     cap = cv2.VideoCapture(self._index)
     WindowTitle = "Camera View"
 
     while True:
       is_reading, frame = cap.read()
-
       if is_reading:
         cv2.imshow(WindowTitle, frame)
         UserQuit = cv2.waitKey(1) & 0xFF == ord('q')

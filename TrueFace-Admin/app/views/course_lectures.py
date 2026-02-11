@@ -1,22 +1,26 @@
 import customtkinter
+import gc
 
 from app.interfaces.lecture import Lecture
 from app.config.context import Context
-from app.config.configrations import Configrations
+from app.config.configurations import Configurations
 from app.interfaces.lecture import Lecture
-from app.controllers.lectures import add_lecture, remove_lecture, update_lecture
-from app.helper.error_handler import error_handler
+from app.interfaces.instructor import Instructor
+from app.controllers.lectures import LecturesController
+from app.utils.error_handler import error_handler
 from app.helper.time import convert_to_24h
 
 class Lectures():
   def __init__(self):
     self._context = Context()
-    self._config = Configrations()
+    self._config = Configurations()
+    self._lectures_controller = LecturesController()
 
+    self.pagination = None
     self.lectures = self._context.get_current_course().get_lectures()
     self.lectures_rows = []
     self.headers = [
-      "Classe ID",
+      "Lecture ID",
       "Subject",
       "Catalog NBR",	
       "Academic Career",	
@@ -26,7 +30,7 @@ class Lectures():
       "Section",	
       "Component",	
       "Campus",	
-      "Instructor ID",	
+      "Instructor",	
       "Instructor Type"
     ]
 
@@ -34,75 +38,83 @@ class Lectures():
   # operations
   # --------------------
 
-  def _search_lecture(self, term: str) -> None:
-    self.lectures = self._context.get_current_course().search_leacture(term)
+  def _search(self, term: str) -> None:
+    self.lectures = self._context.get_current_course().search_lecture(term.strip())
     self._display_lectures_table()
 
   @error_handler
-  def _delete_lecture(self, lecture_id):
-    self._config.loading_cursor_on()
-    remove_lecture(lecture_id)
-    self._context.get_current_course().remove_lecture(lecture_id)
-    self.lectures = self._context.get_current_course().get_lectures()
-    self._config.loading_cursor_off()
-    self._display_lectures_table()
+  def _delete(self, lecture: Lecture):
+    if self._lectures_controller.remove_lecture(lecture):
+      self._refresh_lectures_table()
 
   @error_handler
-  def _submit_edit_class(self, lecture: Lecture):
-    self._config.loading_cursor_on()
-
-    lecture.subject_area = self.subject_entry.get()
-    lecture.catalog_nbr = self.catalog_nbr_entry.get()
-    lecture.academic_career = self.academic_career_entry.get()
-    lecture.offering_nbr = self.offering_nbr_entry.get()
-    lecture.section = self.section_entry.get()
-    lecture.component = self.component_entry.get()
-    lecture.campus = self.campus_entry.get()
-    lecture.instructor.instructor_id = next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
-
-    update_lecture(lecture)
-    self._refresh_lectures_table()
-    self.pop_window.destroy()
-    self._config.loading_cursor_off()
-
-  @error_handler
-  def _submit_new_lecture(self):
-    self._config.loading_cursor_on()
-
-    new_lecture = Lecture(
-      self.lecture_id_entry.get(),
-      self.subject_entry.get(),
-      self.catalog_nbr_entry.get(),
-      self.academic_career_entry.get(),
-      self._context.get_current_course().course_id,
-      self.offering_nbr_entry.get(),
-      convert_to_24h(self.start_hour_var.get(), self.start_minute_var.get(), self.start_ampm_var.get()),
-      convert_to_24h(self.end_hour_var.get(), self.end_minute_var.get(), self.end_ampm_var.get()),
-      self.section_entry.get(),
-      self.component_entry.get(),
-      self.campus_entry.get(),
-      next((user.user_id for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
+  def _create(self):
+    instructor = next((user for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
+    instructor = Instructor(
+      instructor.user_id,
+      instructor.name
     )
-    add_lecture(new_lecture)
+    new_lecture = Lecture(
+      self.lecture_id_entry.get().strip(),
+      self.subject_entry.get().strip(),
+      self.catalog_nbr_entry.get().strip(),
+      self.academic_career_entry.get().strip(),
+      self._context.get_current_course().id,
+      self.offering_nbr_entry.get().strip(),
+      convert_to_24h(
+        self.start_hour_var.get(),
+        self.start_minute_var.get(),
+        self.start_ampm_var.get()
+      ),
+      convert_to_24h(
+        self.end_hour_var.get(),
+        self.end_minute_var.get(),
+        self.end_ampm_var.get()
+      ),
+      self.section_entry.get().strip(),
+      self.component_entry.get().strip(),
+      self.campus_entry.get().strip(),
+      instructor
+    )
 
-    self.lecture_id_entry.delete(0, customtkinter.END)
-    self.subject_entry.delete(0, customtkinter.END)
-    self.catalog_nbr_entry.delete(0, customtkinter.END)
-    self.academic_career_entry.delete(0, customtkinter.END)
-    self.offering_nbr_entry.delete(0, customtkinter.END)
-    self.section_entry.delete(0, customtkinter.END)
-    self.component_entry.delete(0, customtkinter.END)
-    self.campus_entry.delete(0, customtkinter.END)
+    if self._lectures_controller.add_lecture(new_lecture):
+      self.lecture_id_entry.delete(0, customtkinter.END)
+      self.subject_entry.delete(0, customtkinter.END)
+      self.catalog_nbr_entry.delete(0, customtkinter.END)
+      self.academic_career_entry.delete(0, customtkinter.END)
+      self.offering_nbr_entry.delete(0, customtkinter.END)
+      self.section_entry.delete(0, customtkinter.END)
+      self.component_entry.delete(0, customtkinter.END)
+      self.campus_entry.delete(0, customtkinter.END)
 
-    self._add_lecture_row(new_lecture, len(self.lectures) + 1)
-    self._context.get_current_course().add_lecture(new_lecture)
-    self.lectures.append(new_lecture)
-    self.lectures_count.configure(text="Results: " + str(len(self.lectures)))
-    self._config.loading_cursor_off()
+      self._context.get_current_course().add_lecture(new_lecture)
+      self.lectures.append(new_lecture)
+      
+      if self.pagination:
+        self.pagination.set_data(self.lectures)
+      else:
+        self._add_lecture_row(new_lecture, len(self.lectures))
+        self.lectures_count.configure(text="Results: " + str(len(self.lectures)))
 
-  def _refresh_lectures_table(self):
-    self._context.get_current_course().fetch_lectures()
-    self._display_lectures_table()
+  @error_handler
+  def _update(self, lecture: Lecture):
+    lecture.subject_area = self.subject_entry.get().strip()
+    lecture.catalog_nbr = self.catalog_nbr_entry.get().strip()
+    lecture.academic_career = self.academic_career_entry.get().strip()
+    lecture.offering_nbr = self.offering_nbr_entry.get().strip()
+    lecture.section = self.section_entry.get().strip()
+    lecture.component = self.component_entry.get().strip()
+    lecture.campus = self.campus_entry.get().strip()
+
+    instructor = next((user for user in self._context.get_users() if user.name == self.instructor_id_entry.get()), None)
+    lecture.instructor = Instructor(
+      instructor.user_id,
+      instructor.name
+    )
+
+    if self._lectures_controller.update_lecture(lecture):
+      self._refresh_lectures_table()
+      self.pop_window.destroy()
 
   # --------------------
   # forms
@@ -111,15 +123,19 @@ class Lectures():
   def _edit_lecture_form(self, lecture: Lecture):
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
-    self.pop_window.title("Edit Class")
-    self.pop_window.geometry("520x520")
-    self.pop_window.resizable(False, False)
+    self.pop_window.title("Edit Lecture")
+    self.pop_window.geometry("500x550")
+    self.pop_window.resizable(True, True)
+    self.pop_window.minsize(450, 500)
 
-    entry_w, pad_x, pad_y = 350, 12, 8
+    scrollable_frame = customtkinter.CTkScrollableFrame(self.pop_window)
+    scrollable_frame.pack(fill="both", expand=True, padx=15, pady=15)
+
+    entry_w, pad_x, pad_y = 300, 15, 10
 
     customtkinter.CTkLabel(
-      self.pop_window,
-      text="Class ID:",
+      scrollable_frame,
+      text="Lecture ID:",
       anchor="w"
     ).grid(
       row=0,
@@ -129,7 +145,7 @@ class Lectures():
       sticky="w"
     )
     self.lecture_id_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.lecture_id_entry.grid(
@@ -146,7 +162,7 @@ class Lectures():
     self.lecture_id_entry.configure(state="readonly")
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Subject:",
       anchor="w"
     ).grid(
@@ -157,7 +173,7 @@ class Lectures():
       sticky="w"
     )
     self.subject_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.subject_entry.grid(
@@ -173,7 +189,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Catalog NBR:",
       anchor="w"
     ).grid(
@@ -184,7 +200,7 @@ class Lectures():
       sticky="w"
     )
     self.catalog_nbr_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.catalog_nbr_entry.grid(
@@ -200,7 +216,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Academic Career:",
       anchor="w"
     ).grid(
@@ -211,7 +227,7 @@ class Lectures():
       sticky="w"
     )
     self.academic_career_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.academic_career_entry.grid(
@@ -227,7 +243,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Course Offering NBR:",
       anchor="w"
     ).grid(
@@ -238,7 +254,7 @@ class Lectures():
       sticky="w"
     )
     self.offering_nbr_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.offering_nbr_entry.grid(
@@ -254,7 +270,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Section:",
       anchor="w"
     ).grid(
@@ -265,7 +281,7 @@ class Lectures():
       sticky="w"
     )
     self.section_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.section_entry.grid(
@@ -281,7 +297,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Component:",
       anchor="w"
     ).grid(
@@ -292,7 +308,7 @@ class Lectures():
       sticky="w"
     )
     self.component_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.component_entry.grid(
@@ -308,48 +324,110 @@ class Lectures():
     )
 
     # Campus
-    customtkinter.CTkLabel(self.pop_window, text="Campus:", anchor="w").grid(row=7, column=0, padx=pad_x, pady=pad_y, sticky="w")
-    self.campus_entry = customtkinter.CTkEntry(self.pop_window, width=entry_w)
-    self.campus_entry.grid(row=7, column=1, padx=pad_x, pady=pad_y, sticky="ew")
-    self.campus_entry.insert(0, lecture.campus)
+    customtkinter.CTkLabel(
+      scrollable_frame,
+      text="Campus:",
+      anchor="w"
+    ).grid(
+      row=7,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
+    )
+    self.campus_entry = customtkinter.CTkEntry(
+      scrollable_frame,
+      width=entry_w
+    )
+    self.campus_entry.grid(
+      row=7,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
+    self.campus_entry.insert(
+      0,
+      lecture.campus
+    )
 
     # Instructor
-    customtkinter.CTkLabel(self.pop_window, text="Instructor ID:", anchor="w").grid(row=8, column=0, padx=pad_x, pady=pad_y, sticky="w")
-    self.instructor_id_entry = customtkinter.CTkComboBox(
-        self.pop_window, width=entry_w,
-        values=[u.name for u in self._context.get_users()]
+    customtkinter.CTkLabel(
+      scrollable_frame,
+      text="Instructor:",
+      anchor="w"
+    ).grid(
+      row=8,
+      column=0,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="w"
     )
-    self.instructor_id_entry.grid(row=8, column=1, padx=pad_x, pady=pad_y, sticky="ew")
+    self.instructor_id_entry = customtkinter.CTkComboBox(
+      scrollable_frame,
+      width=entry_w,
+      values=[u.name for u in self._context.get_users()]
+    )
+    self.instructor_id_entry.grid(
+      row=8,
+      column=1,
+      padx=pad_x,
+      pady=pad_y,
+      sticky="ew"
+    )
     self.instructor_id_entry.set(lecture.instructor.name)
+
+    # Add some spacing
+    spacer = customtkinter.CTkLabel(scrollable_frame, text="")
+    spacer.grid(
+      row=9,
+      column=0,
+      columnspan=2,
+      pady=10
+    )
 
     # Submit
     submit_button = customtkinter.CTkButton(
-        self.pop_window,
-        text="Update Class",
-        width=entry_w,
-        command=lambda: self._submit_edit_class(lecture)
+      scrollable_frame,
+      text="Update Lecture",
+      height=35,
+      font=("Arial", 12, "bold"),
+      command=lambda: self._update(lecture)
     )
-    submit_button.grid(row=9, column=0, columnspan=2, padx=pad_x, pady=pad_y + 4, sticky="ew")
+    submit_button.grid(
+      row=10,
+      column=0,
+      columnspan=2,
+      padx=pad_x,
+      pady=pad_y + 10,
+      sticky="ew"
+    )
 
-    self.pop_window.columnconfigure(1, weight=1)
+    # Configure grid weights for responsive layout
+    scrollable_frame.columnconfigure(1, weight=1)
 
   def _add_lecture_form(self):
     self.course_id_title_map = {
-      course.title: course.course_id
+      course.title: course.id
       for course in self._context.get_courses()
     }
 
     self.pop_window = customtkinter.CTkToplevel()
     self.pop_window.grab_set()
-    self.pop_window.title("Add New Class")
-    self.pop_window.geometry("520x600")
-    self.pop_window.resizable(False, False)
+    self.pop_window.title("Add New Lecture")
+    self.pop_window.geometry("500x600")
+    self.pop_window.resizable(True, True)
+    self.pop_window.minsize(450, 550)
 
-    entry_w, pad_x, pad_y = 350, 12, 8
+    # Create a scrollable frame for the form content
+    scrollable_frame = customtkinter.CTkScrollableFrame(self.pop_window)
+    scrollable_frame.pack(fill="both", expand=True, padx=15, pady=15)
+
+    entry_w, pad_x, pad_y = 300, 15, 10
 
     customtkinter.CTkLabel(
-      self.pop_window,
-      text="Class ID:",
+      scrollable_frame,
+      text="Lecture ID:",
       anchor="w"
     ).grid(
       row=0,
@@ -359,7 +437,7 @@ class Lectures():
       sticky="w"
     )
     self.lecture_id_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.lecture_id_entry.grid(
@@ -371,7 +449,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Subject:",
       anchor="w"
     ).grid(
@@ -382,7 +460,7 @@ class Lectures():
       sticky="w"
     )
     self.subject_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.subject_entry.grid(
@@ -394,7 +472,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Catalog NBR:",
       anchor="w"
     ).grid(
@@ -405,7 +483,7 @@ class Lectures():
       sticky="w"
     )
     self.catalog_nbr_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.catalog_nbr_entry.grid(
@@ -417,7 +495,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Academic Career:",
       anchor="w"
     ).grid(
@@ -428,7 +506,7 @@ class Lectures():
       sticky="w"
     )
     self.academic_career_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.academic_career_entry.grid(
@@ -440,7 +518,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Course Offering NBR:",
       anchor="w"
     ).grid(
@@ -451,7 +529,7 @@ class Lectures():
       sticky="w"
     )
     self.offering_nbr_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.offering_nbr_entry.grid(
@@ -463,7 +541,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Start Time:",
       anchor="w"
     ).grid(
@@ -482,7 +560,7 @@ class Lectures():
     self.start_ampm_var = customtkinter.StringVar(value="AM")
 
     self.start_hour_menu = customtkinter.CTkOptionMenu(
-      self.pop_window,
+      scrollable_frame,
       values=hours,
       variable=self.start_hour_var,
       width=80
@@ -496,7 +574,7 @@ class Lectures():
     )
 
     self.start_minute_menu = customtkinter.CTkOptionMenu(
-      self.pop_window,
+      scrollable_frame,
       values=minutes,
       variable=self.start_minute_var,
       width=80
@@ -510,7 +588,7 @@ class Lectures():
     )
 
     self.start_ampm_menu = customtkinter.CTkOptionMenu(
-      self.pop_window,
+      scrollable_frame,
       values=["AM", "PM"],
       variable=self.start_ampm_var,
       width=80
@@ -524,7 +602,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="End Time:",
       anchor="w"
     ).grid(
@@ -540,7 +618,7 @@ class Lectures():
     self.end_ampm_var = customtkinter.StringVar(value="AM")
 
     self.end_hour_menu = customtkinter.CTkOptionMenu(
-      self.pop_window,
+      scrollable_frame,
       values=hours,
       variable=self.end_hour_var,
       width=80
@@ -554,7 +632,7 @@ class Lectures():
     )
 
     self.end_minute_menu = customtkinter.CTkOptionMenu(
-      self.pop_window,
+      scrollable_frame,
       values=minutes,
       variable=self.end_minute_var,
       width=80
@@ -568,7 +646,7 @@ class Lectures():
     )
 
     self.end_ampm_menu = customtkinter.CTkOptionMenu(
-      self.pop_window, values=["AM", "PM"],
+      scrollable_frame, values=["AM", "PM"],
       variable=self.end_ampm_var,
       width=80
     )
@@ -581,7 +659,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Section:",
       anchor="w"
     ).grid(
@@ -592,7 +670,7 @@ class Lectures():
       sticky="w"
     )
     self.section_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.section_entry.grid(
@@ -604,7 +682,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Component:",
       anchor="w"
     ).grid(
@@ -615,7 +693,7 @@ class Lectures():
       sticky="w"
     )
     self.component_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.component_entry.grid(
@@ -627,7 +705,7 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
+      scrollable_frame,
       text="Campus:",
       anchor="w"
     ).grid(
@@ -638,7 +716,7 @@ class Lectures():
       sticky="w"
     )
     self.campus_entry = customtkinter.CTkEntry(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w
     )
     self.campus_entry.grid(
@@ -650,8 +728,8 @@ class Lectures():
     )
 
     customtkinter.CTkLabel(
-      self.pop_window,
-      text="Instructor ID:",
+      scrollable_frame,
+      text="Instructor:",
       anchor="w"
     ).grid(
       row=10,
@@ -661,7 +739,7 @@ class Lectures():
       sticky="w"
     )
     self.instructor_id_entry = customtkinter.CTkComboBox(
-      self.pop_window,
+      scrollable_frame,
       width=entry_w,
       values=[u.name for u in self._context.get_users()]
     )
@@ -673,30 +751,34 @@ class Lectures():
       sticky="ew"
     )
 
+    spacer = customtkinter.CTkLabel(scrollable_frame, text="")
+    spacer.grid(row=10, column=0, columnspan=2, pady=10)
+
     submit_button = customtkinter.CTkButton(
-      self.pop_window,
-      text="Save Class",
-      width=entry_w,
-      command=lambda: self._config.executor.submit(self._submit_new_lecture)
+      scrollable_frame,
+      text="Save Lecture",
+      height=35,
+      font=("Arial", 12, "bold"),
+      command=lambda: self._config.executor.submit(self._create)
     )
     submit_button.grid(
       row=11,
       column=0,
       columnspan=2,
       padx=pad_x,
-      pady=pad_y + 4,
+      pady=pad_y + 10,
       sticky="ew"
     )
 
-    self.pop_window.columnconfigure(1, weight=1)
+    scrollable_frame.columnconfigure(1, weight=1)
 
   # --------------------
   # table functions
   # --------------------
 
   @error_handler
-  def _add_lecture_row(self, lecture: Lecture, row):
-    class_row = [
+  def _add_lecture_row(self, lecture: Lecture, row: int):
+    lecture_row = [
       lecture.lecture_id,
       lecture.subject_area,
       lecture.catalog_nbr,
@@ -710,15 +792,15 @@ class Lectures():
       lecture.instructor.name
     ]
 
-    for col, data in enumerate(class_row):
-      class_data = customtkinter.CTkLabel(
+    for col, data in enumerate(lecture_row):
+      lecture_data = customtkinter.CTkLabel(
         self.lectures_table_frame,
         text=data,
         padx=10,
         pady=5
       )
-      class_data.grid(row=row, column=col, sticky="nsew")
-      self.lectures_rows.append(class_data)
+      lecture_data.grid(row=row, column=col, sticky="nsew")
+      self.lectures_rows.append(lecture_data)
 
     edit_button = customtkinter.CTkButton(
       self.lectures_table_frame,
@@ -738,7 +820,7 @@ class Lectures():
       self.lectures_table_frame,
       text="Delete",
       fg_color="red",
-      command=lambda: self._config.executor.submit(self._delete_lecture, lecture)
+      command=lambda: self._delete(lecture)
     )
     delete_button.grid(
       row=row,
@@ -752,21 +834,28 @@ class Lectures():
   @error_handler
   def _clear_lectures_table(self):
     for widget in self.lectures_rows:
-      widget.destroy()
+      try:
+        widget.destroy()
+      except:
+        pass
     self.lectures_rows.clear()
+    
+    if len(self.lectures) > 100:
+      gc.collect()
 
   @error_handler
   def _display_lectures_table(self):
-    self._config.loading_cursor_on()
     self._clear_lectures_table()
 
     for row, lecture in enumerate(self.lectures, start=1):
       self._add_lecture_row(lecture, row)
 
-    self.lectures_count.configure(
-      text="Results: " + str(len(self.lectures))
-    )
-    self._config.loading_cursor_off()
+    self.lectures_count.configure(text="Results: " + str(len(self.lectures)))
+
+  def _refresh_lectures_table(self):
+    self._context.get_current_course().fetch_lectures()
+    self.lectures = self._context.get_current_course().get_lectures()
+    self._display_lectures_table()
 
   # --------------------
   # view entry
@@ -785,7 +874,7 @@ class Lectures():
 
     search_button = customtkinter.CTkButton(
       search_bar_frame,
-      command=lambda: self._search_lecture(search_bar.get()),
+      command=lambda: self._search(search_bar.get()),
       text="Search"
     )
     search_button.grid(
@@ -799,7 +888,7 @@ class Lectures():
     search_bar = customtkinter.CTkEntry(
       search_bar_frame,
       width=400,
-      placeholder_text="Search for Classes..."
+      placeholder_text="Search for Lectures..."
     )
     search_bar.grid(
       row=0,
@@ -826,7 +915,7 @@ class Lectures():
       search_bar_frame,
       command=self._add_lecture_form,
       width=100,
-      text="Add Class"
+      text="Add Lecture"
     )
     add_class_button.grid(
       row=0,
@@ -866,4 +955,4 @@ class Lectures():
     for col in range(len(self.headers)):
       self.lectures_table_frame.columnconfigure(col, weight=1)
 
-    self._config.executor.submit(self._display_lectures_table)
+    self._display_lectures_table()

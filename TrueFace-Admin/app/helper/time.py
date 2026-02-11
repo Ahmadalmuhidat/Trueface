@@ -1,4 +1,4 @@
-def convert_to_24h(hour, minute, ampm):
+def convert_to_24h(hour, minute, ampm) -> str:
   hour = int(hour)
   minute = int(minute)
 

@@ -4,18 +4,17 @@ import customtkinter
 
 from app.config.context import Context
 from app.interfaces.student import Student
-from app.config.configrations import Configrations
-from app.helper.alerts_manager import AlertsManager
-from app.helper.error_handler import error_handler
+from app.config.configurations import Configurations
+from app.utils.alerts_manager import AlertsManager
+from app.utils.error_handler import error_handler
 
 class Students():
   def __init__(self):
     self._context = Context()
-    self._config = Configrations()
+    self._config = Configurations()
     self._alert = AlertsManager()
-
-    self.students_rows = []
-    self.headers = [
+    self._students_rows = []
+    self._headers = [
       "Student ID",
       "First Name",
       "Middle Name",
@@ -30,7 +29,7 @@ class Students():
   @error_handler
   def _refresh(self):
     if not self._context.get_current_lecture():
-      self._alert.error("Please select a class from the settings")
+      self._alert.error("Please select a lecture from the settings")
       return
 
     self._config.frame_processing_executor.submit(self._display_students_table)
@@ -41,34 +40,33 @@ class Students():
 
   @error_handler
   def _clear_attendance_table(self):
-    for widget in self.students_rows:
+    for widget in self._students_rows:
       widget.destroy()
-    self.students_rows.clear()
+    self._students_rows.clear()
 
   @error_handler
   def _add_row(self, student: Student, row):
-     for row, student in enumerate(self._context.get_students(), start=1):
-        student_row = [
-          student.student_id,
-          student.first_name,
-          student.middle_name,
-          student.last_name,
-          student.gender
-        ]
+    student_row = [
+      student.student_id,
+      student.first_name,
+      student.middle_name,
+      student.last_name,
+      student.gender
+    ]
 
-        for col, data in enumerate(student_row):
-          student_data = customtkinter.CTkLabel(
-            self.students_table_frame,
-            text = data,
-            padx = 10,
-            pady = 5
-          )
-          student_data.grid(
-            row = row,
-            column = col,
-            sticky = "nsew"
-          )
-          self.students_rows.append(student_data)
+    for col, data in enumerate(student_row):
+      student_data = customtkinter.CTkLabel(
+        self.students_table_frame,
+        text = data,
+        padx = 10,
+        pady = 5
+      )
+      student_data.grid(
+        row = row,
+        column = col,
+        sticky = "nsew"
+      )
+      self._students_rows.append(student_data)
 
   @error_handler
   def _display_students_table(self):
@@ -77,8 +75,6 @@ class Students():
     if len(self._context.get_students()) > 0:
       for row, student in enumerate(self._context.get_students(), start=1):
         self._add_row(student, row)
-    else:
-      self._alert.error("Please select a lecture from the setting page")
 
   # --------------------
   # view entry
@@ -115,7 +111,7 @@ class Students():
       expand = True
     )
 
-    for col, header in enumerate(self.headers):
+    for col, header in enumerate(self._headers):
       header_label = customtkinter.CTkLabel(
         self.students_table_frame,
         text = header,
@@ -128,7 +124,7 @@ class Students():
         sticky = "nsew"
       )
 
-    for col in range(len(self.headers)):
+    for col in range(len(self._headers)):
       self.students_table_frame.columnconfigure(
         col,
         weight = 1

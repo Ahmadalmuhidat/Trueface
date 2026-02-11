@@ -1,30 +1,32 @@
 import cv2
 import time
+import numpy
 
-from app.config.configrations import Configrations
+from app.config.configurations import Configurations
 from app.config.context import Context
-from app.helper.alerts_manager import AlertsManager
-from app.helper.error_handler import error_handler
+from app.utils.alerts_manager import AlertsManager
+from app.utils.error_handler import error_handler
 
 class FrameProcessor:
-  def __init__(self):
-    self._config = Configrations()
+  def __init__(self) -> None:
+    self._config = Configurations()
     self._context = Context()
     self._alert = AlertsManager()
 
     self._capture_thread_id = None
-
     self._last_frame_time = 0
-    self._frame_interval = 0.5
+    self._frame_interval = 0.3
+    self._frame_skip = 3
+    self._max_processing_size = (320, 240)
 
   @error_handler
-  def _downscale_frame(self, frame):
-    return cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+  def _downscale_frame(self, frame: numpy.ndarray) -> numpy.ndarray:
+    return cv2.resize(frame, self._max_processing_size, interpolation=cv2.INTER_AREA)
 
   @error_handler
-  def start(self, current_camera_index):
+  def start(self, current_camera_index: int) -> None:
     if not self._context.get_current_lecture():
-      self._alert.info("Please select a class from the settings")
+      self._alert.info("Please select a lecture from the settings")
       return
 
     self._capture_thread_id = self._config.frame_processing_executor.submit(
@@ -41,7 +43,7 @@ class FrameProcessor:
     return True
 
   @error_handler
-  def stop(self):
+  def stop(self) -> None:
     if self._capture_thread_id:
       try:
         self._capture_thread_id.result(timeout=5)
@@ -51,23 +53,30 @@ class FrameProcessor:
       self._capture_thread_id = None
 
   @error_handler
-  def _capture_loop(self, current_camera_index):
+  def _capture_loop(self, current_camera_index: int) -> None:
     cap = cv2.VideoCapture(current_camera_index)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    cap.set(cv2.CAP_PROP_FPS, 15)
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     frame_count = 0
-    process_every = 10
 
-    while not self._config.shutdown_event.is_set():
-      ret, frame = cap.read()
-      if not ret:
-        continue
-      frame_count += 1
+    try:
+      while not self._config.shutdown_event.is_set():
+        ret, frame = cap.read()
+        if not ret:
+          continue
+        
+        frame_count += 1
+        if frame_count % self._frame_skip == 0:
+          if not self._should_process_frame():
+            continue
+          
+          small_frame = self._downscale_frame(frame)
+          recognizer_module = getattr(self._config, f"{self._config.current_recognizer}_module")
+          recognizer_module.process_camera_stream(small_frame)
 
-      if frame_count % process_every == 0:
-        if not self._should_process_frame():
-          return
-        getattr(self._config, f"{self._config.current_recognizer}_module")
-
-    cap.release()
+    finally:
+      cap.release()
+      cv2.destroyAllWindows()

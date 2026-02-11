@@ -1,9 +1,10 @@
 import customtkinter
 
-from app.config.configrations import Configrations
-from app.helper.error_handler import error_handler
+from app.config.configurations import Configurations
+from app.utils.error_handler import error_handler
 
 class Router:
+  # singleton pattern
   _instance = None
   _initialized = False
 
@@ -17,9 +18,9 @@ class Router:
       return
     self.__class__._initialized = True
 
-    # private
     self._current_view = None
-    self._config = Configrations()
+    self._current_view_instance = None
+    self._config = Configurations()
 
   @error_handler
   def clear_window(self):
@@ -39,8 +40,9 @@ class Router:
       view_instance.launch_view(frame)
 
       self._current_view = frame
+      self._current_view_instance = view_instance
       self._current_view.pack(fill="both", expand=True)
 
     except Exception as e:
-      self._logger.log_exception(e)
+      print(f"Error navigating to view: {e}")
       pass

@@ -4,12 +4,15 @@ import pandas
 
 from app.config.context import Context
 from app.interfaces.student import Student
-from app.config.configrations import Configrations
-from app.helper.alerts_manager import AlertsManager
-from app.helper.error_handler import error_handler
+from app.config.configurations import Configurations
+from app.utils.alerts_manager import AlertsManager
+from app.utils.error_handler import error_handler
 
 class Attendance():
   def __init__(self):
+    self._context = Context()
+    self._config = Configurations()
+    self._alert = AlertsManager()
     self._attendance_rows = []
     self._headers = [
       "Student ID",
@@ -19,9 +22,6 @@ class Attendance():
       "Attended",
       "Attendance Time"
     ]
-    self._context = Context()
-    self._config = Configrations()
-    self._alert = AlertsManager()
 
   # --------------------
   # operations
@@ -61,7 +61,6 @@ class Attendance():
       index = False
     )
     self._alert.success("fyou can find the report in {downloads_folder}")
-
     self._config.loading_cursor_off()
 
   @error_handler
@@ -95,7 +94,7 @@ class Attendance():
       student.first_name,
       student.middle_name,
       student.last_name,
-      student.is_attended(),
+      "Yes" if student.is_attended() else "No",
       student.time
     ]
 
@@ -120,8 +119,6 @@ class Attendance():
     if len(self._context.get_students()) > 0:
       for row, student in enumerate(self._context.get_students(), start=1):
         self._add_row(student, row)
-    else:
-      self._alert.error("Please select a lecture from the setting page")
 
   # --------------------
   # view entry

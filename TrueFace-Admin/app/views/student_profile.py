@@ -1,19 +1,23 @@
 import customtkinter
 import uuid
+import gc
 
 from app.config.context import Context
 from app.interfaces.lecture import Lecture
-from app.config.configrations import Configrations
-from app.helper.lectures import get_all_lectures
-from app.controllers.students import remove_student_from_lecture, add_student_to_lecture
-from app.helper.error_handler import error_handler
+from app.config.configurations import Configurations
+from app.controllers.lectures import LecturesController
+from app.controllers.students import StudentsController
+from app.utils.error_handler import error_handler
 
 class StudentProfile:
   def __init__(self):
     self._context = Context()
-    self._config = Configrations()
+    self._config = Configurations()
 
     self.lectures = self._context.get_current_student().get_lectures()
+    self.lectures_controller = LecturesController()
+    self.students_controller = StudentsController()
+    self.available_lectures = self.lectures_controller.get_all_lectures()
     self.lectures_rows = []
     self.headers =  [
       "Subject",
@@ -22,46 +26,27 @@ class StudentProfile:
       "Day",
       ""
     ]
-    self.available_lectures = get_all_lectures()
 
   # --------------------
   # operations
   # --------------------
 
   def _search(self, term: str) -> None:
-    self.lectures = self._context.get_current_student().search_leacture(term)
+    self.lectures = self._context.get_current_student().search_lecture(term)
     self._display_lectures_table()
 
   @error_handler
   def _delete(self, lecture: Lecture):
-    self._config.loading_cursor_on()
-    remove_student_from_lecture(self._context.get_current_student(), lecture)
-    self._context.get_current_student().remove_lecture(lecture.lecture_id)
-    self.lectures = self._context.get_current_student().get_lectures()
-    self._config.loading_cursor_off()
-    self._display_lectures_table()
-
-  def _refresh_lectures_table(self):
-    self._context.get_current_student().fetch_lectures()
-    self._display_lectures_table()
+    if self.students_controller.remove_student_from_lecture(self._context.get_current_student(), lecture):
+      self._refresh_lectures_table()
 
   @error_handler
-  def _submit_new_lecture(self):
-    self._config.loading_cursor_on()
+  def _create(self):
     selected_lecture = next((lecture for lecture in self.available_lectures if f"{lecture.subject_area} {lecture.start_time}-{lecture.end_time}" == self.lecture_entry.get()), None)
-    selected_day = self.day_entry.get()
+    selected_lecture.day = self.day_entry.get()
 
-    if not selected_lecture or not selected_day:
-      return
-
-    add_student_to_lecture(uuid.uuid4(), self._context.get_current_student(), selected_lecture, selected_day)
-    self.lectures.append(selected_lecture)
-    self._add_lecture_row(selected_lecture, len(self.lectures) + 1)
-    self._config.loading_cursor_off()
-
-  @error_handler
-  def _clear_all_lecture(self):
-    pass
+    if self.students_controller.add_student_to_lecture(uuid.uuid4(), self._context.get_current_student(), selected_lecture):
+      self._refresh_lectures_table()
 
   # --------------------
   # forms
@@ -75,8 +60,8 @@ class StudentProfile:
     pop_window.resizable(False, False)
     pop_window.title("Add New Lecture")
 
-    class_label = customtkinter.CTkLabel(pop_window, text="Select Lecture:")
-    class_label.pack(padx=10, pady=10)
+    lecture_label = customtkinter.CTkLabel(pop_window, text="Select Lecture:")
+    lecture_label.pack(padx=10, pady=10)
 
     self.lecture_entry = customtkinter.CTkComboBox(
       pop_window,
@@ -107,8 +92,8 @@ class StudentProfile:
 
     submit_button = customtkinter.CTkButton(
       pop_window,
-      text="Save Class",
-      command=lambda: self._submit_new_lecture()
+      text="Save Lecture",
+      command=lambda: self._create()
     )
     submit_button.pack(padx=10, pady=5)
 
@@ -126,14 +111,14 @@ class StudentProfile:
     ]
 
     for col, data in enumerate(lecture_row):
-      class_data = customtkinter.CTkLabel(
+      lecture_data = customtkinter.CTkLabel(
         self.lectures_table_frame,
         text=data,
         padx=10,
         pady=5
       )
-      class_data.grid(row=row, column=col, sticky="nsew")
-      self.lectures_rows.append(class_data)
+      lecture_data.grid(row=row, column=col, sticky="nsew")
+      self.lectures_rows.append(lecture_data)
 
     delete_button = customtkinter.CTkButton(
       self.lectures_table_frame,
@@ -153,19 +138,28 @@ class StudentProfile:
   @error_handler
   def _clear_lectures_table(self):
     for widget in self.lectures_rows:
-      widget.destroy()
+      try:
+        widget.destroy()
+      except:
+        pass
     self.lectures_rows.clear()
+    
+    if len(self.lectures) > 100:
+      gc.collect()
+
+  def _refresh_lectures_table(self):
+    self._context.get_current_student().fetch_lectures()
+    self.lectures = self._context.get_current_student().get_lectures()
+    self._display_lectures_table()
 
   @error_handler
   def _display_lectures_table(self):
-    self._config.loading_cursor_on()
     self._clear_lectures_table()
 
     for row, lecture in enumerate(self.lectures, start=1):
       self._add_lecture_row(lecture, row)
 
-    self.students_count.configure(text=f"Results: {len(self.lectures)}")
-    self._config.loading_cursor_off()
+    self.lectures_count.configure(text=f"Results: {len(self.lectures)}")
 
   # --------------------
   # view entry
@@ -235,22 +229,8 @@ class StudentProfile:
       padx=5
     )
 
-    add_lecture_button = customtkinter.CTkButton(
-      search_bar_frame,
-      width=100,
-      text="Clear all Lectures",
-      command=self._clear_all_lecture
-    )
-    add_lecture_button.grid(
-      row=0,
-      column=6,
-      sticky="nsew",
-      pady=10,
-      padx=5
-    )
-
-    self.students_count = customtkinter.CTkLabel(search_bar_frame)
-    self.students_count.grid(
+    self.lectures_count = customtkinter.CTkLabel(search_bar_frame)
+    self.lectures_count.grid(
       row=0,
       column=7,
       padx=10,
@@ -278,5 +258,5 @@ class StudentProfile:
 
     for col in range(len(self.headers)):
       self.lectures_table_frame.columnconfigure(col, weight=1)
-
-    self._config.executor.submit(self._display_lectures_table)
+    
+    self._display_lectures_table()
