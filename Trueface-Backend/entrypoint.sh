@@ -14,5 +14,4 @@ exec gunicorn TrueFace.wsgi:application \
     --workers 4 \
     --threads 10 \
     --timeout 120 \
-    --log-level debug \
-    --reload
+    --log-level info

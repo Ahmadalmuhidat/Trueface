@@ -1,5 +1,6 @@
 # Core Framework
 Django==4.2.20
+djangorestframework>=3.14.0
 
 # MySQL database support
 mysqlclient>=2.2.0
@@ -12,3 +13,6 @@ PyJWT>=2.8.0
 
 # Production
 gunicorn>=21.2.0
+
+# Linting & Formatting
+ruff>=0.4.0

@@ -4,7 +4,11 @@ pipeline {
   parameters {
     choice(
       name: 'TARGET_DIR',
-      choices: ['TrueFace-Admin', 'TrueFace-Cam', 'Trueface-Backend'],
+      choices: [
+        'TrueFace-Admin', 
+        'TrueFace-Cam', 
+        'Trueface-Backend'
+      ],
       description: 'Select the folder to build from.'
     )
   }

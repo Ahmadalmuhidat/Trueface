@@ -1,0 +1,28 @@
+[tool.ruff]
+# Target Python version
+target-version = "py311"
+
+# Line length matching PEP 8 / Black style
+line-length = 120
+
+# Force 2-space indentation
+indent-width = 2
+
+exclude = [
+    ".git",
+    ".venv",
+    "**/migrations/*",
+]
+
+[tool.ruff.lint]
+# Linting rules: E/W (Pycodestyle), F (Pyflakes), I (Isort), UP (Pyupgrade)
+select = ["E", "W", "F", "I", "UP"]
+ignore = [
+    "E501", # Ignore line length violations (since formatting handles wrapping / we use 120)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
