@@ -159,7 +159,7 @@ The project includes a ready-to-use `Jenkinsfile` for automated pipeline executi
 
 ---
 
-## 🖼️ Visuals
+## Visuals
 
 ### Admin System Interface
 Below is a screenshot showcasing the intuitive user interface of the TrueFace Admin System.
@@ -178,6 +178,6 @@ Here's a glimpse of the TrueFace Camera System in action.
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
