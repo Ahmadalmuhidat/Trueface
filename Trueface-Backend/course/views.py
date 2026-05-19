@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from course.models import Course
 from course.serializers import CourseSerializer
 from lecture.models import Lecture
-from students.views import CustomPagination
+from course.pagination import CustomPagination
 
 
 class CourseViewSet(viewsets.ModelViewSet):

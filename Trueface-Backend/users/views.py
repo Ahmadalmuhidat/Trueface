@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from authentication.utils import cache_invalidate, generate_password
-from students.views import CustomPagination
+from users.pagination import CustomPagination
 from users.models import User
 from users.serializers import UserSerializer
 
@@ -16,7 +16,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
   def list(self, request):
     page = request.query_params.get("page", 1)
-    page_size = request.query_params.get("page_size", 50)
+    page_size = request.query_params.get("page_size", 100)
 
     cache_key = f"users_{page}_{page_size}"
 

@@ -10,11 +10,13 @@ from attendance.models import Attendance
 from attendance.serializers import AttendanceSerializer
 from authentication.utils import validate_token
 from lecture.models import Lecture
+from attendance.pagination import CustomPagination
 
 
 class AttendanceViewSet(viewsets.ModelViewSet):
   queryset = Attendance.objects.all()
   serializer_class = AttendanceSerializer
+  pagination_class = CustomPagination
 
   @action(detail=False, methods=["post"])
   def insert(self, request):

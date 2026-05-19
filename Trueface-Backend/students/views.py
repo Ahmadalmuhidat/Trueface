@@ -3,49 +3,23 @@ from datetime import date
 from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Q
 
 from attendance.models import Attendance
 from authentication.utils import validate_token
 from lecture.models import Lecture, LectureStudentRelation
 from students.models import Student
+from students.pagination import CustomPagination
 from students.serializers import StudentSerializer
-
-# ==========================================
-# CUSTOM PAGINATION
-# ==========================================
-
-
-class CustomPagination(PageNumberPagination):
-  page_size = 50
-  page_size_query_param = "page_size"
-  max_page_size = 1000
-
-  def get_paginated_response(self, data):
-    return Response(
-      {
-        "status_code": 200,
-        "data": data,
-        "pagination": {
-          "page": self.page.number,
-          "page_size": self.page.paginator.per_page,
-          "total_count": self.page.paginator.count,
-          "total_pages": self.page.paginator.num_pages,
-        },
-      }
-    )
-
-
-# ==========================================
-# STUDENT VIEWSET
-# ==========================================
 
 
 class StudentViewSet(viewsets.ModelViewSet):
   queryset = Student.objects.all()
   serializer_class = StudentSerializer
   pagination_class = CustomPagination
+  permission_classes = [IsAuthenticated]
 
   def perform_create(self, serializer):
     serializer.save(create_date=date.today())
@@ -176,7 +150,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     data["id"] = request.data.get("student_id")
     serializer = self.get_serializer(data=data)
     serializer.is_valid(raise_exception=True)
-    self.perform_create(serializer)
+    serializer.save(create_date=date.today())
     return Response({"status_code": 200, "data": True})
 
   def update_legacy(self, request):

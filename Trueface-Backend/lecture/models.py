@@ -6,18 +6,39 @@ from users.models import User
 
 
 class Lecture(models.Model):
-  id = models.CharField(max_length=50, primary_key=True)
-  subject_area = models.CharField(max_length=100, db_index=True)
-  catalog_nbr = models.CharField(max_length=50, db_index=True)
-  academic_career = models.CharField(max_length=50)
-  course = models.ForeignKey(Course, on_delete=models.CASCADE, db_column="Course", db_index=True)
+  id = models.CharField(
+    max_length=50,
+    primary_key=True
+  )
+  subject_area = models.CharField(
+    max_length=100,
+    db_index=True
+  )
+  catalog_nbr = models.CharField(
+    max_length=50,
+    db_index=True
+  )
+  academic_career = models.CharField(
+    max_length=50
+  )
+  course = models.ForeignKey(
+    Course,
+    on_delete=models.CASCADE,
+    db_column="Course",
+    db_index=True,
+  )
   offering_nbr = models.CharField(max_length=50)
   start_time = models.TimeField(db_index=True)
   end_time = models.TimeField(db_index=True)
   section = models.CharField(max_length=50)
   component = models.CharField(max_length=50)
   campus = models.CharField(max_length=100)
-  instructor = models.ForeignKey(User, on_delete=models.CASCADE, db_column="Instructor", db_index=True)
+  instructor = models.ForeignKey(
+    User,
+    on_delete=models.CASCADE,
+    db_column="Instructor",
+    db_index=True,
+  )
 
   class Meta:
     db_table = "Lectures"

@@ -170,6 +170,22 @@ CACHES = {
   }
 }
 
+
+# DRF Settings
+REST_FRAMEWORK = {
+  "DEFAULT_PARSER_CLASSES": [
+    "rest_framework.parsers.JSONParser",
+    "rest_framework.parsers.FormParser",
+    "rest_framework.parsers.MultiPartParser",
+  ],
+
+  "DEFAULT_THROTTLE_RATES": {
+    "anon": "1000/hour",
+    "user": "5000/hour",
+    "login": "10/hour",
+  },
+}
+
 # For production, use Redis:
 # CACHES = {
 #     'default': {

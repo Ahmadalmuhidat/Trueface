@@ -2,16 +2,20 @@ from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from attendance.models import Attendance
 from authentication.utils import validate_token
 from lecture.models import Lecture, LectureStudentRelation
 from lecture.serializers import LectureSerializer
+from lecture.pagination import CustomPagination
 
 
 class LectureViewSet(viewsets.ModelViewSet):
   queryset = Lecture.objects.select_related("course", "instructor")
   serializer_class = LectureSerializer
+  pagination_class = CustomPagination
+  permission_classes = [IsAuthenticated]
 
   @action(detail=False, methods=["get"])
   def get_by_teacher(self, request):
