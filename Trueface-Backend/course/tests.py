@@ -30,8 +30,9 @@ class CourseTests(TestCase):
 class CourseAPITests(APITestCase):
   def setUp(self):
     from django.contrib.auth.hashers import make_password
-    from users.models import User
+
     from authentication.utils import GenerateToken
+    from users.models import User
 
     self.user = User.objects.create(
       id="U001", name="Admin", email="admin@example.com", password=make_password("password"), role="Admin"

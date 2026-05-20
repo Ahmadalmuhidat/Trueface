@@ -11,6 +11,7 @@ from users.models import User
 
 class LoginView(APIView):
   permission_classes = [AllowAny]
+
   def post(self, request):
     email = request.data.get("email")
     password = request.data.get("password")
@@ -50,5 +51,6 @@ class LoginView(APIView):
 
 class HealthView(APIView):
   permission_classes = [AllowAny]
+
   def get(self, request, *args, **kwargs):
     return Response({"status_code": 200, "data": True})

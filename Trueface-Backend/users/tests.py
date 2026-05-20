@@ -26,6 +26,7 @@ class UserTests(TestCase):
 class UserAPITests(APITestCase):
   def setUp(self):
     from authentication.utils import GenerateToken
+
     self.user = User.objects.create(
       id="U001",
       name="John Doe",
