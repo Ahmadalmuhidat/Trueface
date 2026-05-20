@@ -1,6 +1,6 @@
 name: Run Backend Django Tests
 
-trigger:
+on:
   push:
     branches: ["main"]
   pull_request:
