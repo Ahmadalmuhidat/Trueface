@@ -6,21 +6,10 @@ from users.models import User
 
 
 class Lecture(models.Model):
-  id = models.CharField(
-    max_length=50,
-    primary_key=True
-  )
-  subject_area = models.CharField(
-    max_length=100,
-    db_index=True
-  )
-  catalog_nbr = models.CharField(
-    max_length=50,
-    db_index=True
-  )
-  academic_career = models.CharField(
-    max_length=50
-  )
+  id = models.CharField(max_length=50, primary_key=True)
+  subject_area = models.CharField(max_length=100, db_index=True)
+  catalog_nbr = models.CharField(max_length=50, db_index=True)
+  academic_career = models.CharField(max_length=50)
   course = models.ForeignKey(
     Course,
     on_delete=models.CASCADE,

@@ -2,9 +2,9 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from course.models import Course
+from course.pagination import CustomPagination
 from course.serializers import CourseSerializer
 from lecture.models import Lecture
-from course.pagination import CustomPagination
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -12,34 +12,11 @@ class CourseViewSet(viewsets.ModelViewSet):
   serializer_class = CourseSerializer
   pagination_class = CustomPagination
 
-  # --- Legacy Desktop App Mappings ---
+  from rest_framework.decorators import action
 
-  def insert_legacy(self, request):
-    data = request.data.copy()
-    data["id"] = request.data.get("course_id")
-    serializer = self.get_serializer(data=data)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response({"status_code": 200, "data": True})
-
-  def update_legacy(self, request):
-    course_id = request.data.get("course_id")
-    course = Course.objects.get(id=course_id)
-    data = request.data.copy()
-    data["id"] = course_id
-    serializer = self.get_serializer(course, data=data, partial=True)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response({"status_code": 200, "data": True})
-
-  def destroy_legacy(self, request):
-    course_id = request.data.get("course_id")
-    Course.objects.filter(id=course_id).delete()
-    return Response({"status_code": 200, "data": True})
-
-  def get_lectures_legacy(self, request):
-    course_id = request.query_params.get("course_id")
-    lectures = Lecture.objects.filter(course_id=course_id).select_related("instructor")
+  @action(detail=True, methods=["get"])
+  def lectures(self, request, pk=None):
+    lectures = Lecture.objects.filter(course_id=pk).select_related("instructor")
     data = [
       {
         "id": lec.id,
@@ -57,4 +34,4 @@ class CourseViewSet(viewsets.ModelViewSet):
       }
       for lec in lectures
     ]
-    return Response({"status_code": 200, "data": data})
+    return Response(data)

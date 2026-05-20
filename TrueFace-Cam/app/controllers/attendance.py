@@ -16,7 +16,7 @@ class AttendanceController:
     self._alerts_manager = AlertsManager()
 
   @error_handler
-  def insert_attendance(student_id: str, student_name: str) -> bool:
+  def insert_attendance(self, student_id: str, student_name: str) -> bool:
     try:
       current_lecture = self._context.get_current_lecture()
       if not current_lecture:
@@ -24,23 +24,24 @@ class AttendanceController:
 
       data = {
         "student_id": student_id,
-        "current_lecture": current_lecture.lecture_id
+        "lecture_field": current_lecture.lecture_id
       }
 
-      response = requests.post(
-        self._configurations.get_backend_endpoint() + "/attendance/batch_insert",
-        data=data,
-        timeout=10
-      ).content
-      response = json.loads(response.decode('utf-8'))
+      headers = {}
+      token_data = self._configurations.get_token()
+      if token_data:
+        token = token_data.get("token") if isinstance(token_data, dict) else token_data
+        headers["Authorization"] = f"Bearer {token}"
 
-      if response.get("status_code") == 200:
-        self._alerts_manager.success("{} has been signed".format(student_name))
-        return True
-      else:
-        message = response.get("error", "Something went wrong while inserting attendance")
-        self._alerts_manager.error(message)
-      return False
+      response = requests.post(
+        self._configurations.get_backend_endpoint() + "/attendance/",
+        json=data,
+        headers=headers,
+        timeout=10
+      )
+      response.raise_for_status()
+      self._alerts_manager.success("{} has been signed".format(student_name))
+      return True
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")

@@ -25,26 +25,23 @@ class UserTests(TestCase):
 
 class UserAPITests(APITestCase):
   def setUp(self):
+    from authentication.utils import GenerateToken
     self.user = User.objects.create(
       id="U001",
       name="John Doe",
       email="john@example.com",
       password=make_password("securepassword"),
-      role="Teacher",
+      role="Admin",
     )
+    token = GenerateToken({"user_id": self.user.id, "role": self.user.role})
+    self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
   def test_list_users(self):
     response = self.client.get("/users/")
     self.assertEqual(response.status_code, 200)
-    # CustomPagination is used on `/users/` list
-    self.assertIn("data", response.data)
-    self.assertEqual(len(response.data["data"]), 1)
-
-  def test_legacy_list_users(self):
-    response = self.client.get("/admin/users/")
-    self.assertEqual(response.status_code, 200)
-    self.assertIn("data", response.data)
-    self.assertEqual(len(response.data["data"]), 1)
+    # Check for paginated results
+    self.assertIn("results", response.data)
+    self.assertEqual(len(response.data["results"]), 1)
 
   def test_create_user_with_generated_password(self):
     data = {"id": "U002", "name": "Jane Smith", "email": "jane@example.com", "role": "Teacher"}

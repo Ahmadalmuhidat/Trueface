@@ -27,8 +27,8 @@ class LecturesController:
   def add_lecture(self, lecture_object: Lecture) -> bool:
     try:
       data = {
-        "lecture_id": lecture_object.lecture_id.lower(),
-        "subject": lecture_object.subject_area,
+        "id": lecture_object.lecture_id.lower(),
+        "subject_area": lecture_object.subject_area,
         "catalog_nbr": lecture_object.catalog_nbr,
         "academic_career": lecture_object.academic_career,
         "course": lecture_object.course,
@@ -38,67 +38,46 @@ class LecturesController:
         "section": lecture_object.section,
         "component": lecture_object.component,
         "campus": lecture_object.campus,
-        "instructor_id": lecture_object.instructor.id
+        "instructor": lecture_object.instructor.id
       }
 
       response = self._session.post(
-        self._configurations.get_backend_endpoint() + "/lectures/insert",
-        data=data
+        self._configurations.get_backend_endpoint() + "/lectures/",
+        json=data
       )
       response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        self._alerts_manager.success("New lecture has been added")
-        return True
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message if message else "Something went wrong while inserting the lecture")
-        return False
+      self._alerts_manager.success("New lecture has been added")
+      return True
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")
+      return False
     except json.JSONDecodeError as e:
       self._alerts_manager.error(f"Invalid response format: {str(e)}")
+      return False
 
   @error_handler
   def remove_lecture(self, lecture_object: Lecture) -> bool:
     confirmation = self._alerts_manager.options("Are you sure you want to delete the lecture")
     if confirmation:
       try:
-        data = {
-          "lecture_id": lecture_object.lecture_id
-        }
-
-        response = self._session.post(
-          self._configurations.get_backend_endpoint() + "/lectures/remove",
-          data=data
+        response = self._session.delete(
+          f"{self._configurations.get_backend_endpoint()}/lectures/{lecture_object.lecture_id}/"
         )
         response.raise_for_status()
-        response_data = response.json()
-
-        if response_data.get("status_code") == 200:
-          if response_data.get("data"):
-            self._alerts_manager.success("Lecture has been deleted")
-            return True
-        else:
-          message = response_data.get("error")
-          self._alerts_manager.error(message if message else "Something went wrong while removing the lecture")
-          return False
+        self._alerts_manager.success("Lecture has been deleted")
+        return True
 
       except requests.exceptions.RequestException as e:
         self._alerts_manager.error(f"Network error: {str(e)}")
-        return False
-      except json.JSONDecodeError as e:
-        self._alerts_manager.error(f"Invalid response format: {str(e)}")
         return False
 
   @error_handler
   def update_lecture(self, lecture_object: Lecture) -> bool:
     try:
       data = {
-        "lecture": lecture_object.lecture_id,
-        "subject": lecture_object.subject_area,
+        "id": lecture_object.lecture_id,
+        "subject_area": lecture_object.subject_area,
         "catalog_nbr": lecture_object.catalog_nbr,
         "academic_career": lecture_object.academic_career,
         "course": self._context.get_current_course().id,
@@ -111,24 +90,14 @@ class LecturesController:
         "instructor": lecture_object.instructor.id
       }
 
-      response = self._session.post(
-        self._configurations.get_backend_endpoint() + "/lectures/update",
-        data=data
+      response = self._session.put(
+        f"{self._configurations.get_backend_endpoint()}/lectures/{lecture_object.lecture_id}/",
+        json=data
       )
       response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        self._alerts_manager.success("Lecture has been updated")
-        return True
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message if message else "Something went wrong while updating the lecture")
-        return False
+      self._alerts_manager.success("Lecture has been updated")
+      return True
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")
-      return False
-    except json.JSONDecodeError as e:
-      self._alerts_manager.error(f"Invalid response format: {str(e)}")
       return False

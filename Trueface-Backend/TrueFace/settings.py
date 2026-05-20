@@ -109,8 +109,7 @@ DATABASES = {
   #   'PASSWORD': '[PASSWORD]',
   #   'HOST': 'localhost',  # or your MySQL server IP
   #   'PORT': '3306',       # default MySQL port
-  # 
-
+  #
 }
 
 
@@ -173,12 +172,17 @@ CACHES = {
 
 # DRF Settings
 REST_FRAMEWORK = {
+  "DEFAULT_AUTHENTICATION_CLASSES": [
+    "authentication.middleware.JWTAuthentication",
+  ],
+  "DEFAULT_PERMISSION_CLASSES": [
+    "rest_framework.permissions.IsAuthenticated",
+  ],
   "DEFAULT_PARSER_CLASSES": [
     "rest_framework.parsers.JSONParser",
     "rest_framework.parsers.FormParser",
     "rest_framework.parsers.MultiPartParser",
   ],
-
   "DEFAULT_THROTTLE_RATES": {
     "anon": "1000/hour",
     "user": "5000/hour",

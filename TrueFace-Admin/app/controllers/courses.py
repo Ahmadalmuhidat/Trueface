@@ -16,37 +16,13 @@ class CoursesController:
   @error_handler
   def fetch_courses(self) -> list:
     try:
-      response = self._session.get(self._configurations.get_backend_endpoint() + "/courses/get_all")
+      response = self._session.get(self._configurations.get_backend_endpoint() + "/courses/")
       response.raise_for_status()
-      response_data = response.json()
+      data = response.json()
 
-      if response_data.get("status_code") == 200:
-        return response_data.get("data")
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message if message else "Something went wrong while getting the courses")
-        return []
-
-    except requests.exceptions.RequestException as e:
-      self._alerts_manager.error(f"Network error: {str(e)}")
-      return []
-    except json.JSONDecodeError as e:
-      self._alerts_manager.error(f"Invalid response format: {str(e)}")
-      return []
-
-  @error_handler
-  def fetch_courses(self) -> list:
-    try:
-      response = self._session.get(self._configurations.get_backend_endpoint() + "/courses/get_all")
-      response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        return response_data.get("data")
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message if message else "Something went wrong while getting the courses")
-        return []
+      if isinstance(data, dict) and "results" in data:
+        return data["results"]
+      return data
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")
@@ -59,7 +35,7 @@ class CoursesController:
   def update_course(self, course_object: Course) -> bool:
     try:
       data = {
-        "course_id": course_object.id,
+        "id": course_object.id,
         "title": course_object.title,
         "credit": course_object.credit,
         "maximum_units": course_object.maximum_units,
@@ -73,33 +49,23 @@ class CoursesController:
         "component": course_object.component
       }
 
-      response = self._session.post(
-        self._configurations.get_backend_endpoint() + "/courses/update",
-        data=data
+      response = self._session.put(
+        f"{self._configurations.get_backend_endpoint()}/courses/{course_object.id}/",
+        json=data
       )
       response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        self._alerts_manager.success("Course has been updated")
-        return True
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message if message else "Something went wrong while updating the courses")
-        return False
+      self._alerts_manager.success("Course has been updated")
+      return True
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")
-      return False
-    except json.JSONDecodeError as e:
-      self._alerts_manager.error(f"Invalid response format: {str(e)}")
       return False
 
   @error_handler
   def add_course(self, course_object: Course) -> bool:
     try:
       data = {
-        "course_id": course_object.id.lower(),
+        "id": course_object.id.lower(),
         "title": course_object.title,
         "credit": course_object.credit,
         "maximum_units": course_object.maximum_units,
@@ -114,25 +80,15 @@ class CoursesController:
       }
 
       response = self._session.post(
-        self._configurations.get_backend_endpoint() + "/courses/insert",
-        data=data
+        self._configurations.get_backend_endpoint() + "/courses/",
+        json=data
       )
       response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        self._alerts_manager.success("New course has been added")
-        return True
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message if message else "Something went wrong while inserting the course")
-        return False
+      self._alerts_manager.success("New course has been added")
+      return True
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")
-      return False
-    except json.JSONDecodeError as e:
-      self._alerts_manager.error(f"Invalid response format: {str(e)}")
       return False
 
   @error_handler
@@ -140,57 +96,26 @@ class CoursesController:
     confirmation = self._alerts_manager.options("Are you sure you want to delete the course")
     if confirmation:
       try:
-        data = {
-          "course_id": course_object.id
-        }
-        
-        response = self._session.post(
-          self._configurations.get_backend_endpoint() + "/courses/remove",
-          data=data
+        response = self._session.delete(
+          f"{self._configurations.get_backend_endpoint()}/courses/{course_object.id}/"
         )
         response.raise_for_status()
-        response_data = response.json()
-
-        if response_data.get("status_code") == 200:
-          if response_data.get("data"):
-            self._alerts_manager.success("Course has been deleted")
-            return True
-        else:
-          message = response_data.get("error")
-          self._alerts_manager.error(message if message else "Something went wrong while removing the course")
-          return False
+        self._alerts_manager.success("Course has been deleted")
+        return True
 
       except requests.exceptions.RequestException as e:
         self._alerts_manager.error(f"Network error: {str(e)}")
-        return False
-      except json.JSONDecodeError as e:
-        self._alerts_manager.error(f"Invalid response format: {str(e)}")
         return False
 
   @error_handler
   def fetch_lectures_by_course(self, course_object: Course) -> list:
     try:
-      data = {
-        "course_id": course_object.id
-      }
-      
       response = self._session.get(
-        self._configurations.get_backend_endpoint() + "/courses/get_lectures",
-        params=data
+        f"{self._configurations.get_backend_endpoint()}/courses/{course_object.id}/lectures/"
       )
       response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        return response_data.get("data")
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message if message else "Something went wrong while getting the lectures")
-        return []
+      return response.json()
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")
-      return []
-    except json.JSONDecodeError as e:
-      self._alerts_manager.error(f"Invalid response format: {str(e)}")
       return []

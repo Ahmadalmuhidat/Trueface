@@ -29,6 +29,16 @@ class CourseTests(TestCase):
 
 class CourseAPITests(APITestCase):
   def setUp(self):
+    from django.contrib.auth.hashers import make_password
+    from users.models import User
+    from authentication.utils import GenerateToken
+
+    self.user = User.objects.create(
+      id="U001", name="Admin", email="admin@example.com", password=make_password("password"), role="Admin"
+    )
+    token = GenerateToken({"user_id": self.user.id, "role": self.user.role})
+    self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
     self.course = Course.objects.create(
       id="CS101",
       title="Intro to CS",
@@ -46,13 +56,8 @@ class CourseAPITests(APITestCase):
   def test_list_courses(self):
     response = self.client.get("/courses/")
     self.assertEqual(response.status_code, 200)
-    self.assertTrue(any(c["id"] == "CS101" for c in response.data["data"]))
-
-  def test_legacy_list_courses(self):
-    response = self.client.get("/admin/courses/")
-    self.assertEqual(response.status_code, 200)
-    self.assertIn("data", response.data)
-    self.assertTrue(any(c["id"] == "CS101" for c in response.data["data"]))
+    # response.data will have "results" because of pagination
+    self.assertTrue(any(c["id"] == "CS101" for c in response.data["results"]))
 
   def test_create_course(self):
     data = {

@@ -20,25 +20,13 @@ class AuthController:
         "password": password
       }
 
-      response = self._session.get(
-        self._configurations.get_backend_endpoint() + "/login",
-        params=data
+      response = self._session.post(
+        self._configurations.get_backend_endpoint() + "/auth/login/",
+        json=data
       )
       response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        return response_data.get("data")
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(
-          message=message if message else "Something went wrong while checking user info",
-        )
-        return None
+      return response.json()
 
     except requests.exceptions.RequestException as e:
       self._alerts_manager.error(f"Network error: {str(e)}")
-      return None
-    except json.JSONDecodeError as e:
-      self._alerts_manager.error(f"Invalid response format: {str(e)}")
       return None

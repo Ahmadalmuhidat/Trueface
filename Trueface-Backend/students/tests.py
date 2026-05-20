@@ -68,17 +68,20 @@ class StudentAPITests(APITestCase):
     # Generate a teacher token
     payload = {"user_id": "U001", "role": "Teacher"}
     self.teacher_token = jwt.encode(payload, "supersecret", algorithm="HS256")
+    self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.teacher_token}")
 
   def test_list_students(self):
     response = self.client.get("/students/")
     self.assertEqual(response.status_code, 200)
-    self.assertIn("data", response.data)
+    # response.data contains "results" because of pagination
+    self.assertIn("results", response.data)
 
   def test_student_lectures(self):
     # Create relation
     LectureStudentRelation.objects.create(id="R101", student=self.student, lecture_field=self.lecture, day="Monday")
     response = self.client.get(f"/students/{self.student.id}/lectures/")
     self.assertEqual(response.status_code, 200)
+    # Legacy wrapper removed
     self.assertEqual(len(response.data), 1)
     self.assertEqual(response.data[0]["day"], "Monday")
 
@@ -105,8 +108,9 @@ class StudentAPITests(APITestCase):
     LectureStudentRelation.objects.create(id="R103", student=self.student, lecture_field=self.lecture, day=today_name)
     response = self.client.get("/students/get_by_lecture/", {"current_lecture": self.lecture.id})
     self.assertEqual(response.status_code, 200)
-    self.assertEqual(len(response.data["data"]), 1)
-    self.assertEqual(response.data["data"][0]["first_name"], "Jane")
+    # Legacy wrapper removed
+    self.assertEqual(len(response.data), 1)
+    self.assertEqual(response.data[0]["first_name"], "Jane")
 
   def test_remove_from_lecture(self):
     today_name = date.today().strftime("%A")

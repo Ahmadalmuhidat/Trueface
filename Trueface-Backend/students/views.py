@@ -3,9 +3,8 @@ from datetime import date
 from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q
+from rest_framework.response import Response
 
 from attendance.models import Attendance
 from authentication.utils import validate_token
@@ -93,7 +92,7 @@ class StudentViewSet(viewsets.ModelViewSet):
           "time": attendance_records.get(student.id),
         }
       )
-    return Response({"status_code": 200, "data": data})
+    return Response(data)
 
   @action(detail=False, methods=["post"])
   @transaction.atomic
@@ -115,7 +114,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         if relation:
           relation.delete()
-          return Response({"status_code": 200, "data": True})
+          return Response({"success": True})
         return Response({"error": "Student not found in this lecture"}, status=404)
       except Lecture.DoesNotExist:
         return Response({"error": "Lecture not found or access denied"}, status=404)
@@ -136,66 +135,9 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         if attendance_count > 0:
           Attendance.objects.filter(student_id=student_id, lecture_field=lecture_obj).delete()
-          return Response({"status_code": 200, "data": True})
+          return Response({"success": True})
         return Response({"error": "No attendance records found"}, status=404)
       except Lecture.DoesNotExist:
         return Response({"error": "Lecture not found or access denied"}, status=404)
     except Exception as e:
       return Response({"error": str(e)}, status=500)
-
-  # --- Legacy Desktop App Mappings ---
-
-  def insert_legacy(self, request):
-    data = request.data.copy()
-    data["id"] = request.data.get("student_id")
-    serializer = self.get_serializer(data=data)
-    serializer.is_valid(raise_exception=True)
-    serializer.save(create_date=date.today())
-    return Response({"status_code": 200, "data": True})
-
-  def update_legacy(self, request):
-    student_id = request.data.get("student_id")
-    student = Student.objects.get(id=student_id)
-    data = request.data.copy()
-    data["id"] = student_id
-    serializer = self.get_serializer(student, data=data, partial=True)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response({"status_code": 200, "data": True})
-
-  def destroy_legacy(self, request):
-    student_id = request.data.get("student_id")
-    Student.objects.filter(id=student_id).delete()
-    return Response({"status_code": 200, "data": True})
-
-  def add_lecture_legacy(self, request):
-    LectureStudentRelation.objects.create(
-      id=request.data.get("relation_id"),
-      student_id=request.data.get("student_id"),
-      lecture_field_id=request.data.get("lecture_id"),
-      day=request.data.get("day"),
-    )
-    return Response({"status_code": 200, "data": True})
-
-  def remove_lecture_legacy(self, request):
-    LectureStudentRelation.objects.filter(
-      student_id=request.data.get("student_id"),
-      lecture_field_id=request.data.get("lecture_id"),
-      day=request.data.get("day"),
-    ).delete()
-    return Response({"status_code": 200, "data": True})
-
-  def get_lectures_legacy(self, request):
-    student_id = request.query_params.get("student_id")
-    relations = LectureStudentRelation.objects.filter(student_id=student_id).select_related("lecture_field")
-    data = [
-      {
-        "id": r.lecture_field.id,
-        "subject_area": r.lecture_field.subject_area,
-        "start_time": r.lecture_field.start_time.strftime("%H:%M:%S") if r.lecture_field.start_time else None,
-        "end_time": r.lecture_field.end_time.strftime("%H:%M:%S") if r.lecture_field.end_time else None,
-        "day": r.day,
-      }
-      for r in relations
-    ]
-    return Response({"status_code": 200, "data": data})

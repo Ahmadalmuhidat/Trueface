@@ -25,7 +25,7 @@ class Configurations:
     # private
     self._backend_server_ip = "localhost"
     self._backend_port = 8000
-    self._backend_entry_route = "admin"
+    self._backend_entry_route = ""
 
     # public
     self.executor = ThreadPoolExecutor(
@@ -62,4 +62,7 @@ class Configurations:
     return cls.token
 
   def get_backend_endpoint(self):
-    return f"http://{self._backend_server_ip}:{self._backend_port}/{self._backend_entry_route}"
+    base_url = f"http://{self._backend_server_ip}:{self._backend_port}"
+    if self._backend_entry_route:
+      return f"{base_url}/{self._backend_entry_route}"
+    return base_url

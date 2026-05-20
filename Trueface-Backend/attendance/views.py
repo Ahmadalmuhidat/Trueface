@@ -7,10 +7,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from attendance.models import Attendance
+from attendance.pagination import CustomPagination
 from attendance.serializers import AttendanceSerializer
 from authentication.utils import validate_token
 from lecture.models import Lecture
-from attendance.pagination import CustomPagination
 
 
 class AttendanceViewSet(viewsets.ModelViewSet):

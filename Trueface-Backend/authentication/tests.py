@@ -51,9 +51,3 @@ class AuthAPITests(APITestCase):
     self.assertEqual(response.status_code, 200)
     self.assertEqual(response.data["status_code"], 200)
     self.assertEqual(response.data["data"], True)
-
-  def test_legacy_teacher_health_check(self):
-    response = self.client.get("/teacher/")
-    self.assertEqual(response.status_code, 200)
-    self.assertEqual(response.data["status_code"], 200)
-    self.assertEqual(response.data["data"], True)

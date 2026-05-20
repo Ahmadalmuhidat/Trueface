@@ -4,8 +4,8 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from authentication.utils import cache_invalidate, generate_password
-from users.pagination import CustomPagination
 from users.models import User
+from users.pagination import CustomPagination
 from users.serializers import UserSerializer
 
 
@@ -44,29 +44,3 @@ class UserViewSet(viewsets.ModelViewSet):
   def perform_destroy(self, instance):
     instance.delete()
     cache_invalidate("users_*")
-
-  # --- Legacy Desktop App Mappings ---
-
-  def insert_legacy(self, request):
-    data = request.data.copy()
-    data["id"] = request.data.get("user_id")
-    serializer = self.get_serializer(data=data)
-    serializer.is_valid(raise_exception=True)
-    self.perform_create(serializer)
-    return Response({"status_code": 200, "data": True})
-
-  def update_legacy(self, request):
-    user_id = request.data.get("user_id")
-    user = User.objects.get(id=user_id)
-    data = request.data.copy()
-    data["id"] = user_id
-    serializer = self.get_serializer(user, data=data, partial=True)
-    serializer.is_valid(raise_exception=True)
-    self.perform_update(serializer)
-    return Response({"status_code": 200, "data": True})
-
-  def destroy_legacy(self, request):
-    user_id = request.data.get("user_id")
-    User.objects.filter(id=user_id).delete()
-    cache_invalidate("users_*")
-    return Response({"status_code": 200, "data": True})

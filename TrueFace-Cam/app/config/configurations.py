@@ -28,7 +28,8 @@ class Configurations:
     # self._backend_server_ip = "34.29.161.87"
     self._backend_server_ip = "localhost"
     self._backend_port = 8000
-    self._backend_entry_route = "teacher"
+    self._backend_entry_route = ""
+    self._token = None
 
     # performance
     self._processing_mode = "CPU"
@@ -67,7 +68,18 @@ class Configurations:
     return cls.window
 
   def get_backend_endpoint(self):
-    return f"http://{self._backend_server_ip}:{self._backend_port}/{self._backend_entry_route}"
+    endpoint = f"http://{self._backend_server_ip}:{self._backend_port}"
+    if self._backend_entry_route:
+      endpoint += f"/{self._backend_entry_route}"
+    return endpoint
+
+  @classmethod
+  def set_token(cls, token):
+    cls()._token = token
+
+  @classmethod
+  def get_token(cls):
+    return cls()._token
 
   def get_backend_ip_address(self):
     return self._backend_server_ip

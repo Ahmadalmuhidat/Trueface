@@ -19,23 +19,23 @@ class StudentController:
       if not self._context.get_current_lecture():
         return []
 
-      data = {
+      params = {
         "current_lecture": self._context.get_current_lecture().lecture_id
       }
 
+      headers = {}
+      token_data = self._configurations.get_token()
+      if token_data:
+        token = token_data.get("token") if isinstance(token_data, dict) else token_data
+        headers["Authorization"] = f"Bearer {token}"
+
       response = requests.get(
-        self._configurations.get_backend_endpoint() + "/students/get_by_lecture",
-        params = data
+        self._configurations.get_backend_endpoint() + "/students/get_by_lecture/",
+        params=params,
+        headers=headers
       )
       response.raise_for_status()
-      response_data = response.json()
-
-      if response_data.get("status_code") == 200:
-        return response_data.get("data")
-      else:
-        message = response_data.get("error")
-        self._alerts_manager.error(message = message if message else "Something went wrong while getting the students")
-        return []
+      return response.json()
 
     except requests.exceptions.Timeout:
       self._alerts_manager.error("Request timed out while loading students")

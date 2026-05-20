@@ -103,11 +103,13 @@ class AttendanceAPITests(APITestCase):
 
     payload = {"user_id": "U001", "role": "Teacher"}
     self.teacher_token = jwt.encode(payload, "supersecret", algorithm="HS256")
+    self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.teacher_token}")
 
   def test_list_attendances(self):
     response = self.client.get("/attendances/")
     self.assertEqual(response.status_code, 200)
-    self.assertEqual(len(response.data), 0)
+    # response.data contains "results" because of pagination
+    self.assertEqual(len(response.data["results"]), 0)
 
   def test_insert_attendance(self):
     response = self.client.post(

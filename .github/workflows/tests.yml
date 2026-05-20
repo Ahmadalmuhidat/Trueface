@@ -1,0 +1,31 @@
+name: Run Backend Django Tests
+
+on: ["push", "pull_request"]
+branches: ["main"]
+
+defaults:
+  run:
+    working-directory: Trueface-Backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmysqlclient-dev pkg-config
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          JWT_TOKEN_SECRET: "test_secret_for_ci"
+        run: python manage.py test

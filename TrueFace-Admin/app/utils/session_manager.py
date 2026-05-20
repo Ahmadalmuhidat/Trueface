@@ -14,6 +14,7 @@ def get_session():
       if _session is None:
         _session = requests.Session()
 
+        # ... (rest of setup)
         retry_strategy = Retry(
           total=3,
           backoff_factor=1,
@@ -29,5 +30,12 @@ def get_session():
         _session.mount("http://", adapter)
         _session.mount("https://", adapter)
         _session.timeout = 10
+
+  from app.config.configurations import Configurations
+  token_data = Configurations.get_token()
+  if token_data:
+    # Handle if token is a dict or string
+    token = token_data.get("token") if isinstance(token_data, dict) else token_data
+    _session.headers.update({"Authorization": f"Bearer {token}"})
 
   return _session

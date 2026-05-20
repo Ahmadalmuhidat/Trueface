@@ -99,17 +99,21 @@ class LectureAPITests(APITestCase):
 
     payload = {"user_id": "U001", "role": "Teacher"}
     self.teacher_token = jwt.encode(payload, "supersecret", algorithm="HS256")
+    self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.teacher_token}")
 
   def test_list_lectures(self):
     response = self.client.get("/lectures/")
     self.assertEqual(response.status_code, 200)
-    self.assertEqual(len(response.data), 1)
+    # Paginated results key
+    self.assertEqual(len(response.data["results"]), 1)
 
   def test_get_by_teacher(self):
+    # Parameter 'current_teacher' is still used in this specific action via validate_token
     response = self.client.get("/lectures/get_by_teacher/", {"current_teacher": self.teacher_token})
     self.assertEqual(response.status_code, 200)
-    self.assertEqual(len(response.data["data"]), 1)
-    self.assertEqual(response.data["data"][0]["subject_area"], "CS")
+    # Legacy wrapper removed
+    self.assertEqual(len(response.data), 1)
+    self.assertEqual(response.data[0]["subject_area"], "CS")
 
   def test_delete_lecture(self):
     response = self.client.post(
